@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { decodeCsvBytes, parseConsumptionCsv, parseEnergy, parseMonth, validateImportRows, type RawRow } from "./csv-import";
+import { planMonthWrites } from "@/lib/consumption-writer";
+import {
+  decodeCsvBytes, parseConsumptionCsv, parseEnergy, parseMonth, summarizeImport, toImportSaveInputs, validateImportRows, type RawRow,
+} from "./csv-import";
 
 const NOW = new Date("2026-10-07T12:00:00Z");
 const row = (year: string, month: string, energy: string, kwh: string): RawRow => ({ year, month, energy, kwh });
@@ -112,5 +115,43 @@ describe("validateImportRows — relecture", () => {
     expect(validateImportRows(rows, NOW).ok).toBe(false);
     rows[0] = { ...rows[0], kwh: "3900" };
     expect(validateImportRows(rows, NOW).ok).toBe(true);
+  });
+});
+
+describe("import → saveConsumption : jamais de validation forcée", () => {
+  const batches = validateImportRows([
+    row("2019", "1", "elec", "4400"),
+    row("2019", "2", "elec", "4300"),
+    row("2023", "1", "gaz", "2600"),
+  ], NOW).batches;
+
+  it("prépare des entrées toujours non validées, source PDF (mode 1)", () => {
+    const inputs = toImportSaveInputs("efa-1", batches);
+    expect(inputs).toHaveLength(2);
+    for (const input of inputs) {
+      expect(input.validated).toBe(false);
+      expect(input.source).toBe("PDF");
+      expect(input.efaId).toBe("efa-1");
+    }
+  });
+
+  it("un import non validé n'écrase pas un mois validé (règle de saveConsumption appliquée aux entrées de l'import)", () => {
+    // Janvier 2019 est validé à 4 500 en base ; février 2019 n'existe pas encore.
+    const [input2019] = toImportSaveInputs("efa-1", batches);
+    const plan = planMonthWrites([{ month: 1, kwh: 4500, validated: true }], input2019.months, input2019.validated ?? false);
+    expect(plan.skipped).toEqual([{ month: 1, reason: "ALREADY_VALIDATED" }]);
+    expect(plan.toWrite).toEqual([{ month: 2, kwh: 4300 }]);
+  });
+
+  it("résume l'import : mois enregistrés et mois ignorés car déjà validés, avec la liste", () => {
+    const summary = summarizeImport([
+      { year: 2019, energyType: "ELECTRICITY", writtenMonths: [2], skipped: [{ month: 1, reason: "ALREADY_VALIDATED" }] },
+      { year: 2023, energyType: "GAS", writtenMonths: [1], skipped: [{ month: 1, reason: "DUPLICATE_IN_INPUT" }] },
+    ]);
+    expect(summary).toEqual({
+      writtenCount: 2,
+      skippedCount: 1,
+      skipped: [{ year: 2019, energyType: "ELECTRICITY", month: 1 }],
+    });
   });
 });

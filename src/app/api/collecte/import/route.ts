@@ -1,5 +1,6 @@
 // API de l'import de fichier (tâche 2.1).
-//   POST /api/collecte/import → { efaId, rows: [{ year, month, energy, kwh }] (texte relu/corrigé), validated }
+//   POST /api/collecte/import → { efaId, rows: [{ year, month, energy, kwh }] } (texte relu/corrigé)
+//   Réponse : { ok, reports, summary } — les mois sont TOUJOURS écrits non validés.
 import { NextResponse } from "next/server";
 import { CollecteError, importRows } from "@/modules/collecte";
 
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
-    return NextResponse.json({ ok: true, reports: await importRows(body) });
+    return NextResponse.json({ ok: true, ...(await importRows(body)) });
   } catch (e) {
     if (e instanceof CollecteError) {
       return NextResponse.json({ error: e.message, issues: e.issues }, { status: e.status });

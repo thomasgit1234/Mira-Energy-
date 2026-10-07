@@ -9,7 +9,7 @@
 // - mois en chiffre (1-12) ou en toutes lettres (« janvier ») ; énergie « électricité » / « gaz ».
 // ⚠️ Format de travail défini par l'équipe, à confirmer avec la tutrice (pas un format OPERAT officiel).
 import { parseCsv } from "@/lib/csv";
-import type { MonthInput } from "@/lib/consumption-writer";
+import type { MonthInput, SaveConsumptionInput, SkippedMonth } from "@/lib/consumption-writer";
 import { MIN_YEAR, maxYear, type EnergyType } from "@/lib/domain";
 import { MONTH_LABELS, parseKwh } from "./manual";
 
@@ -159,6 +159,33 @@ export function groupForSave(rows: CheckedRow[]): ImportBatch[] {
   return [...batches.values()]
     .map((b) => ({ ...b, months: [...b.months].sort((x, y) => x.month - y.month) }))
     .sort((a, b) => a.year - b.year || a.energyType.localeCompare(b.energyType));
+}
+
+/**
+ * Entrées de saveConsumption pour un import : un lot par (année, énergie), **toujours non validé**.
+ * Un import n'est jamais une validation : saveConsumption n'écrase donc pas un mois déjà validé
+ * (règle D4, planMonthWrites). L'utilisateur valide ensuite les valeurs dans la saisie manuelle.
+ */
+export function toImportSaveInputs(efaId: string, batches: ImportBatch[]): SaveConsumptionInput[] {
+  return batches.map((b) => ({ efaId, year: b.year, energyType: b.energyType, source: "PDF", months: b.months, validated: false }));
+}
+
+/** Résultat d'un lot, tel que renvoyé après saveConsumption. */
+export type BatchResult = { year: number; energyType: EnergyType; writtenMonths: number[]; skipped: SkippedMonth[] };
+
+export type ImportSummary = {
+  writtenCount: number;
+  /** Mois ignorés parce qu'ils étaient déjà validés en base. */
+  skippedCount: number;
+  skipped: { year: number; energyType: EnergyType; month: number }[];
+};
+
+/** Récapitulatif affiché après l'import : mois enregistrés, mois ignorés car déjà validés (liste). */
+export function summarizeImport(results: BatchResult[]): ImportSummary {
+  const skipped = results.flatMap((r) =>
+    r.skipped.filter((s) => s.reason === "ALREADY_VALIDATED").map((s) => ({ year: r.year, energyType: r.energyType, month: s.month })),
+  );
+  return { writtenCount: results.reduce((n, r) => n + r.writtenMonths.length, 0), skippedCount: skipped.length, skipped };
 }
 
 /**

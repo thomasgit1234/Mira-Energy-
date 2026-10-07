@@ -2,11 +2,12 @@
 // Tâche 2.1 — import d'un fichier CSV avec relecture et correction avant enregistrement.
 // Le fichier est lu dans le navigateur ; le contrôle affiché en direct est la MÊME fonction que
 // celle du serveur (csv-import.ts), qui recontrôle tout avant d'écrire.
+// Les mois importés sont TOUJOURS enregistrés non validés : un mois déjà validé n'est jamais écrasé.
 import { useRef, useState } from "react";
 import styles from "./Collecte.module.css";
 import { decodeCsvBytes, parseConsumptionCsv, validateImportRows, type RawRow } from "./csv-import";
 import { ENERGY_LABELS, MONTH_LABELS } from "./manual";
-import type { SaveReport } from "./repository";
+import type { ImportResult } from "./repository";
 
 const nf = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
 const FIELDS: { key: keyof RawRow; label: string; width: string }[] = [
@@ -27,13 +28,13 @@ export function ImportForm({ efaId }: { efaId: string }) {
   const [fileIssues, setFileIssues] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
-  const [reports, setReports] = useState<SaveReport[] | null>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
 
   const check = validateImportRows(rows);
 
   async function onFile(file: File | undefined) {
     setMessage(null);
-    setReports(null);
+    setResult(null);
     if (!file) return;
     setFileName(file.name);
     const parsed = parseConsumptionCsv(decodeCsvBytes(await file.arrayBuffer()));
@@ -43,13 +44,13 @@ export function ImportForm({ efaId }: { efaId: string }) {
 
   function edit(index: number, key: keyof RawRow, value: string) {
     setMessage(null);
-    setReports(null);
+    setResult(null);
     setRows((rs) => rs.map((r, i) => (i === index ? { ...r, [key]: value } : r)));
   }
 
   function remove(index: number) {
     setMessage(null);
-    setReports(null);
+    setResult(null);
     setRows((rs) => rs.filter((_, i) => i !== index));
   }
 
@@ -58,13 +59,13 @@ export function ImportForm({ efaId }: { efaId: string }) {
     setFileIssues([]);
     setFileName(null);
     setMessage(null);
-    setReports(null);
+    setResult(null);
     if (fileInput.current) fileInput.current.value = "";
   }
 
-  async function save(validated: boolean) {
+  async function save() {
     setMessage(null);
-    setReports(null);
+    setResult(null);
     if (!check.ok) {
       setMessage({ kind: "error", text: "Corrigez d'abord les lignes en rouge." });
       return;
@@ -74,14 +75,15 @@ export function ImportForm({ efaId }: { efaId: string }) {
       const res = await fetch("/api/collecte/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ efaId, rows, validated }),
+        // Jamais de « validated » : un import est toujours enregistré non validé (voir importRows).
+        body: JSON.stringify({ efaId, rows }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setMessage({ kind: "error", text: data.error ?? "Import impossible." });
         return;
       }
-      setReports(data.reports);
+      setResult({ reports: data.reports, summary: data.summary });
     } catch {
       setMessage({ kind: "error", text: "Le serveur ne répond pas. Vérifiez que `npm run dev` tourne." });
     } finally {
@@ -162,33 +164,40 @@ export function ImportForm({ efaId }: { efaId: string }) {
           </div>
 
           <div className={styles.actions}>
-            <button type="button" className={styles.secondary} disabled={busy || !check.ok} onClick={() => save(false)} data-testid="save-draft">
-              Enregistrer en brouillon
-            </button>
-            <button type="button" className={styles.primary} disabled={busy || !check.ok} onClick={() => save(true)} data-testid="save-validated">
-              {busy ? "Patientez…" : "Valider et enregistrer"}
+            <button type="button" className={styles.primary} disabled={busy || !check.ok} onClick={save} data-testid="save">
+              {busy ? "Patientez…" : "Importer"}
             </button>
           </div>
-          {!check.ok && <p className={styles.hintSmall}>Les boutons s&apos;activent quand toutes les lignes sont correctes.</p>}
+          <p className={styles.hintSmall}>
+            {check.ok ? "" : "Le bouton s'active quand toutes les lignes sont correctes. "}
+            Les mois importés sont enregistrés <strong>non validés</strong> : un mois déjà validé n&apos;est jamais remplacé.
+            Vous les validerez ensuite dans la <a href="/collecte/saisie">saisie manuelle</a>.
+          </p>
         </>
       )}
 
       {message && <p role="alert" data-testid="message" className={message.kind === "ok" ? styles.msgOk : styles.msgErr}>{message.text}</p>}
 
-      {reports && (
-        <div className={styles.report} role="status" data-testid="report">
+      {result && (
+        <div className={`${styles.report} ${result.summary.skippedCount > 0 ? styles.reportWarn : ""}`} role="status" data-testid="report">
           <p className={styles.msgOk}>Import terminé.</p>
-          {reports.map((r) => {
-            const blocked = r.skipped.filter((s) => s.reason === "ALREADY_VALIDATED").map((s) => s.month);
-            return (
-              <p key={`${r.year}-${r.energyType}`} data-testid="report-line">
-                <strong>{r.year} · {ENERGY_LABELS[r.energyType]}</strong> : {r.writtenMonths.length} mois enregistré{r.writtenMonths.length > 1 ? "s" : ""}
-                {blocked.length > 0 && (
-                  <span className={styles.msgErr}> — non écrasé{blocked.length > 1 ? "s" : ""} car déjà validé{blocked.length > 1 ? "s" : ""} : {monthList(blocked)}</span>
-                )}
-              </p>
-            );
-          })}
+          <p data-testid="written-count">
+            <strong>{result.summary.writtenCount}</strong> mois enregistré{result.summary.writtenCount > 1 ? "s" : ""} (non validé{result.summary.writtenCount > 1 ? "s" : ""}).
+          </p>
+          <p data-testid="skipped-count">
+            <strong>{result.summary.skippedCount}</strong> mois ignoré{result.summary.skippedCount > 1 ? "s" : ""} car déjà validé{result.summary.skippedCount > 1 ? "s" : ""}
+            {result.summary.skippedCount > 0 ? " :" : "."}
+          </p>
+          {result.summary.skippedCount > 0 && (
+            <ul data-testid="skipped-list">
+              {result.reports
+                .map((r) => ({ r, months: result.summary.skipped.filter((s) => s.year === r.year && s.energyType === r.energyType).map((s) => s.month) }))
+                .filter(({ months }) => months.length > 0)
+                .map(({ r, months }) => (
+                  <li key={`${r.year}-${r.energyType}`}>{r.year} · {ENERGY_LABELS[r.energyType].toLowerCase()} : {monthList(months)}</li>
+                ))}
+            </ul>
+          )}
           <p className={styles.hintSmall}>Voir le résultat dans <a href="/collecte">Données déjà collectées</a>.</p>
         </div>
       )}

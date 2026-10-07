@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/session";
 import { saveConsumption, type SkippedMonth } from "@/lib/consumption-writer";
 import { MIN_YEAR, maxYear, type EnergyType } from "@/lib/domain";
 import { isEnergyType, validateManualEntry, type EntryIssue } from "./manual";
-import { MAX_IMPORT_ROWS, validateImportRows } from "./csv-import";
+import { MAX_IMPORT_ROWS, summarizeImport, toImportSaveInputs, validateImportRows, type ImportSummary } from "./csv-import";
 
 export class CollecteError extends Error {
   constructor(
@@ -155,18 +155,22 @@ export const importSchema = z.object({
     .array(z.object({ year: z.string().max(40), month: z.string().max(40), energy: z.string().max(40), kwh: z.string().max(40) }))
     .min(1)
     .max(MAX_IMPORT_ROWS),
-  validated: z.boolean(),
+  // Pas de champ « validated » : un import n'est JAMAIS une validation. Si le client en envoie un,
+  // zod l'ignore (clé inconnue retirée) et les mois sont écrits non validés.
 });
+
+export type ImportResult = { reports: SaveReport[]; summary: ImportSummary };
 
 /**
  * Import de fichier (mode 1, tâche 2.1) : les lignes relues et corrigées par l'utilisateur sont
- * recontrôlées ici, puis écrites lot par lot (une année × une énergie) via saveConsumption.
+ * recontrôlées ici, puis écrites lot par lot (une année × une énergie) via saveConsumption,
+ * TOUJOURS avec validated = false (toImportSaveInputs) : un mois déjà validé n'est jamais écrasé.
  * Source « PDF » = mode 1 « import PDF/Excel » (src/lib/domain.ts).
  */
-export async function importRows(rawInput: unknown): Promise<SaveReport[]> {
+export async function importRows(rawInput: unknown): Promise<ImportResult> {
   const parsed = importSchema.safeParse(rawInput);
   if (!parsed.success) throw new CollecteError(400, "Requête invalide.");
-  const { efaId, rows, validated } = parsed.data;
+  const { efaId, rows } = parsed.data;
 
   await assertEfaOwnedByCurrentUser(efaId);
 
@@ -177,9 +181,9 @@ export async function importRows(rawInput: unknown): Promise<SaveReport[]> {
   }
 
   const reports: SaveReport[] = [];
-  for (const batch of check.batches) {
-    const saved = await saveConsumption({ efaId, year: batch.year, energyType: batch.energyType, source: "PDF", months: batch.months, validated });
-    reports.push({ year: batch.year, energyType: batch.energyType, writtenMonths: saved.writtenMonths, skipped: saved.skipped });
+  for (const input of toImportSaveInputs(efaId, check.batches)) {
+    const saved = await saveConsumption(input);
+    reports.push({ year: input.year, energyType: input.energyType, writtenMonths: saved.writtenMonths, skipped: saved.skipped });
   }
-  return reports;
+  return { reports, summary: summarizeImport(reports) };
 }
