@@ -1,0 +1,15 @@
+:root { --ink:#1f2a27; --muted:#5d6b66; --petrol:#0e5c54; --rule:#d8dfdc; --bg:#fafaf7; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--ink); background:var(--bg); line-height:1.5; }
+.page { max-width: 880px; margin: 0 auto; padding: 32px 20px 64px; }
+h1 { font-size: 2rem; color: var(--petrol); margin: .2em 0; }
+.eyebrow { color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-size: .8rem; margin: 0; }
+.back { color: var(--petrol); text-decoration: none; font-size: .9rem; }
+.hint { color: var(--muted); font-size: .9rem; border-top: 1px solid var(--rule); padding-top: 12px; margin-top: 28px; }
+code { background:#eef2f0; padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+.grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(250px,1fr)); gap: 12px; margin-top: 20px; padding:0; list-style:none; }
+.card { display:block; background:#fff; border:1px solid var(--rule); border-radius: 10px; padding: 14px 16px; color:inherit; text-decoration:none; height:100%; }
+.card:hover { border-color: var(--petrol); }
+.card h3 { margin: 2px 0 4px; font-size: 1.02rem; }
+.card p { margin: 0; color: var(--muted); font-size: .88rem; }
+.status { margin-top: 24px; font-size: .9rem; }

@@ -1,0 +1,26 @@
+# Vérifie chaque PR : types, lint, tests, schéma, build. (NON TESTÉ sur GitHub à la création.)
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://mira:mira@localhost:5432/mira
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: mira, POSTGRES_PASSWORD: mira, POSTGRES_DB: mira }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mira" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run check
+      - run: npx prisma migrate deploy   # les migrations s'appliquent sur une base vide
+      - run: npm run build

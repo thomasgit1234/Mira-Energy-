@@ -1,0 +1,118 @@
+// =============================================================================
+// Schéma de données — Annexe B du dossier projet V7.3 (Mira Énergie)
+//
+// RÈGLES
+//  - Toute modification du schéma passe par une PR labellisée "schema",
+//    relue par le référent socle (piste T1, voir docs/REPARTITION.md).
+//  - Une migration déjà fusionnée dans `main` ne se modifie jamais : on en
+//    crée une nouvelle.
+//  - Les écarts par rapport à l'Annexe B sont tous listés dans
+//    docs/DECISIONS.md (repères [D3] et [D4] ci-dessous).
+// =============================================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String // hashé, jamais en clair
+  role      String // "OWNER", "TENANT", "ADMIN"
+  buildings Building[] // [D3] relation inverse requise par Prisma (Annexe B ne la déclarait pas)
+}
+
+model Building {
+  id           String  @id @default(uuid())
+  rnbId        String? @unique // ID-RNB depuis l'API RNB
+  address      String
+  postcode     String
+  city         String
+  climateZone  String // ex: "H2a", "H3" (pour le calcul DJU)
+  surfaceTotal Float
+  users        User[]
+  efAs         EFA[]
+}
+
+model EFA {
+  id           String        @id @default(uuid())
+  buildingId   String
+  building     Building      @relation(fields: [buildingId], references: [id], onDelete: Cascade) // [D3]
+  entityType   String // "SASU", "SCI", "COLLECTIVITE", "PARTICULAR"
+  siret        String?
+  role         String // "OWNER_OCCUPIER", "LANDLORD", "TENANT"
+  surfaces     SurfaceLine[]
+  consumptions Consumption[]
+}
+
+model SurfaceLine {
+  id              String @id @default(uuid())
+  efaId           String
+  efa             EFA    @relation(fields: [efaId], references: [id], onDelete: Cascade) // [D3]
+  categoryCode    String // code de la catégorie d'activité (référentiel OPERAT)
+  subCategoryCode String // code de la sous-catégorie (idem)
+  surfaceM2       Float
+}
+
+model Consumption {
+  id         String             @id @default(uuid())
+  efaId      String
+  efa        EFA                @relation(fields: [efaId], references: [id], onDelete: Cascade) // [D3]
+  year       Int // ex: 2023
+  energyType String // "ELECTRICITY", "GAS"
+  source     String // "PDF", "MANUAL", "ENEDIS_API"
+  data       Json // métadonnées brutes de la facture ou de l'export
+  validated  Boolean            @default(false)
+  months     ConsumptionMonth[]
+
+  // [D4] une seule ligne Consumption par (EFA, année, énergie) : évite le double
+  // comptage quand plusieurs modes de collecte fournissent la même année.
+  @@unique([efaId, year, energyType])
+}
+
+model ConsumptionMonth {
+  id            String      @id @default(uuid())
+  consumptionId String
+  consumption   Consumption @relation(fields: [consumptionId], references: [id], onDelete: Cascade) // [D3]
+  year          Int
+  month         Int // 1-12
+  kwh           Float
+  source        String // PDF, MANUAL, ENEDIS_EXPORT...
+  confidence    Float? // score de confiance de l'OCR
+  validated     Boolean     @default(false)
+
+  @@unique([consumptionId, year, month])
+}
+
+model ReferenceData {
+  id    String @id @default(uuid())
+  type  String // "CATEGORY", "SUBCATEGORY", "CABS_THRESHOLD"
+  code  String
+  label String
+  value Json
+
+  @@unique([type, code]) // [D3] permet des imports idempotents
+}
+
+model ClimateZone {
+  id       String @id @default(uuid())
+  postcode String
+  city     String
+  zone     String // ex: "H2a"
+
+  @@index([postcode]) // [D3] recherche par code postal (tâche 1.2)
+}
+
+model DjYear {
+  id          String @id @default(uuid())
+  year        Int // ex: 2023
+  climateZone String // ex: "H2a"
+  dju         Float // Degrés-Jours Unifiés
+
+  @@unique([year, climateZone]) // [D3] permet des imports idempotents
+}

@@ -1,0 +1,9 @@
+# Décommentez et mettez vos pseudos GitHub une fois la répartition validée (docs/REPARTITION.md).
+# /prisma/                 @responsable-schema
+# /src/lib/                @responsable-socle
+# /src/modules/batiment/   @T1
+# /src/modules/collecte/   @T2
+# /src/modules/surfaces/   @T3
+# /src/modules/climat/     @T4
+# /src/modules/conformite/ @T5
+# /src/modules/dashboard/  @T6

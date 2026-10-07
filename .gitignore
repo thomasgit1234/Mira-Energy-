@@ -1,0 +1,27 @@
+# dépendances et builds
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# client Prisma généré (recréé par `npm install` / `npx prisma generate`)
+src/generated/
+
+# secrets et configuration locale — ne jamais committer
+.env
+.env.*
+!.env.example
+
+# données réelles : INTERDIT dans Git (RGPD). Seules les fixtures fictives sont versionnées.
+data/private/
+*.pdf
+!docs/**/*.pdf
+
+# système / éditeurs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
