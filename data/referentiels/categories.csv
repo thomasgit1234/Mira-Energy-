@@ -2,3 +2,6 @@ type;code;label;value
 CATEGORY;DEMO_RESTAURATION;Restauration (DÉMO);"{""note"":""valeur fictive""}"
 SUBCATEGORY;DEMO_RESTAURANT;Restaurant (DÉMO);"{""category"":""DEMO_RESTAURATION""}"
 CABS_THRESHOLD;DEMO_RESTAURANT;Seuil Cabs fictif (DÉMO);"{""kwhPerM2"":999,""fictif"":true}"
+CATEGORY;DEMO_BUREAUX;Bureaux (DÉMO);"{""note"":""valeur fictive""}"
+SUBCATEGORY;DEMO_RESTAURANT_RESERVE;Réserve de restaurant (DÉMO);"{""category"":""DEMO_RESTAURATION""}"
+SUBCATEGORY;DEMO_BUREAU_OUVERT;Bureaux ouverts (DÉMO);"{""category"":""DEMO_BUREAUX""}"
