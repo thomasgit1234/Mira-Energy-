@@ -1,6 +1,6 @@
 # Mira Énergie — contexte du projet (à lire en premier)
 
-> Fichier de contexte pour toute personne (ou toute IA) qui reprend le projet. Dernière mise à jour : mercredi 7 octobre 2026.
+> Fichier de contexte pour toute personne (ou toute IA) qui reprend le projet. Dernière mise à jour : jeudi 8 octobre 2026.
 > À placer à la racine du dépôt sous le nom `CLAUDE.md` : l'extension Claude Code le lit automatiquement.
 > **Ne jamais y écrire de mot de passe, de clé, ni de vraie donnée client.**
 
@@ -38,7 +38,7 @@ npm run dev         # http://localhost:3000
 ```
 À chaque réouverture : Docker Desktop lancé → `npm run db:up` → `npm run dev`.
 Autres commandes : `npm run check` (typage + lint + tests + prisma validate), `npm test`, `npm run db:studio`, `npm run db:import`, `npm run db:seed`, `npm run db:reset`, `npm run db:down`.
-Santé : http://localhost:3000/api/health. La base Docker écoute sur le port **5433** (voir `.env.example`).
+Santé : http://localhost:3000/api/health. La base Docker écoute sur le port **5432** (voir `.env.example` et `docker-compose.yml`).
 
 ## 4. Le plan (11 phases) — `Mira_Energie_Plan_Taches_S2.pdf`
 00 Cadrage & socle (**fait**) · 01 Référentiel bâtiment (1.1 adresse + ID-RNB via API RNB/BDNB, 1.2 zone climatique par code postal, 1.3 formulaire de décomposition des surfaces) · 02 Collecte (2.1 import PDF/Excel avec relecture et correction, 2.2 saisie manuelle, 2.3 email d'historique `mailto:`, 2.4 guide d'export espace client, 2.5 API ACD simulée) · 03 Photo + Points (estimation de surface, appoint) · 04 DJU (4.1 chargement, 4.2 jointure année/zone, 4.3 kWh/DJU) · 05 Comparateur d'années (5.1 histogramme brut vs corrigé, 5.2 année la plus favorable, 5.3 choix de l'année de référence) · 06 Conformité (6.1 Crelat, 6.2 Cabs, 6.3 verdict) · 07 Tableau de bord (7.1 synthèse, 7.2 frise, 7.3 comparatif, 7.4 états vides) · 08 Export & attestation · 09 RGPD & sécurité (9.1 consentement, 9.2 chiffrement, 9.3 cloisonnement propriétaire/locataire, 9.4 suppression) · 10 Démo (seed, hors-ligne, répétition) · 11 perspective (hors périmètre).
@@ -48,7 +48,7 @@ Les phases **01, 02 et 09** peuvent avancer en parallèle une fois le socle pos�
 Attention : un « track » est un morceau du projet confié à une personne ; une « phase » est une étape dans le temps. Ce ne sont pas la même chose.
 
 ## 5. Échéances
-- **Soutenance intermédiaire de prototypage : semaine du 12 octobre 2026** (date exacte et date limite de remise des documents **à confirmer** avec le tuteur).
+- **Soutenance intermédiaire de prototypage : semaine du 19 octobre 2026** (jour exact et date limite de remise des documents **à confirmer** avec le tuteur).
 - **Soutenance finale : décembre 2026.**
 - **Réunion PFE avec le tuteur : jeudi 8 octobre 2026** (visio).
 
