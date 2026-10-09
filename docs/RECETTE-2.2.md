@@ -22,7 +22,7 @@ Le seed contient l'électricité **2019** et de **l'année dernière**, 12 mois 
 | 1 | Ouvrir la page | Année proposée = dernière année sans données (ex. 2024), 12 cases vides, colonne « En base » = vide | ☐ |
 | 2 | Janvier : `3 000` ; Février : `abc` | Février en rouge : « « abc » n'est pas un nombre de kWh » ; total = 3 000 kWh | ☐ |
 | 3 | Cliquer « Enregistrer en brouillon » | Refus « corrigez les cases en rouge » ; rien n'est écrit | ☐ |
-| 4 | Février : `2800,5`, Enregistrer | « Enregistré : 2 mois (janvier, février) » ; badges « non validé · saisie » | ☐ |
+| 4 | Février : `2800,5`, Enregistrer | « Enregistré : 2 mois (janvier, février) » ; badges « non validé · saisie manuelle » | ☐ |
 | 5 | Choisir l'année dernière (ex. 2025) | 12 badges « 🔒 validé » | ☐ |
 | 6 | Mars : `9999`, « Enregistrer en brouillon » | Encadré orange « **Non écrasé car déjà validé : mars** » ; la case revient à 3 900 | ☐ |
 | 7 | Mars : `3950`, cocher « J'ai relu et je valide », « Valider et enregistrer » | 12 mois enregistrés ; mars = 3 950 | ☐ |

@@ -1,4 +1,4 @@
-// Tâche 2.2 — accès base du module « collecte » (lecture de l'existant + saisie manuelle).
+// Tâches 2.2 et 2.1 — accès base du module « collecte » (lecture de l'existant, saisie manuelle, import).
 // Les règles sont dans manual.ts (pures) ; l'écriture passe UNIQUEMENT par saveConsumption.
 // Serveur uniquement : ne pas importer ce fichier depuis un composant client (types seulement).
 import { z } from "zod";
@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/session";
 import { saveConsumption, type SkippedMonth } from "@/lib/consumption-writer";
 import { MIN_YEAR, maxYear, type EnergyType } from "@/lib/domain";
 import { isEnergyType, validateManualEntry, type EntryIssue } from "./manual";
+import { MAX_IMPORT_ROWS, summarizeImport, toImportSaveInputs, validateImportRows, type ImportSummary } from "./csv-import";
 
 export class CollecteError extends Error {
   constructor(
@@ -146,4 +147,43 @@ export async function saveManualEntry(rawInput: unknown): Promise<SaveReport> {
     validated,
   });
   return { year, energyType: energyType as EnergyType, writtenMonths: saved.writtenMonths, skipped: saved.skipped };
+}
+
+export const importSchema = z.object({
+  efaId: z.string().min(1),
+  rows: z
+    .array(z.object({ year: z.string().max(40), month: z.string().max(40), energy: z.string().max(40), kwh: z.string().max(40) }))
+    .min(1)
+    .max(MAX_IMPORT_ROWS),
+  // Pas de champ « validated » : un import n'est JAMAIS une validation. Si le client en envoie un,
+  // zod l'ignore (clé inconnue retirée) et les mois sont écrits non validés.
+});
+
+export type ImportResult = { reports: SaveReport[]; summary: ImportSummary };
+
+/**
+ * Import de fichier (mode 1, tâche 2.1) : les lignes relues et corrigées par l'utilisateur sont
+ * recontrôlées ici, puis écrites lot par lot (une année × une énergie) via saveConsumption,
+ * TOUJOURS avec validated = false (toImportSaveInputs) : un mois déjà validé n'est jamais écrasé.
+ * Source « PDF » = mode 1 « import PDF/Excel » (src/lib/domain.ts).
+ */
+export async function importRows(rawInput: unknown): Promise<ImportResult> {
+  const parsed = importSchema.safeParse(rawInput);
+  if (!parsed.success) throw new CollecteError(400, "Requête invalide.");
+  const { efaId, rows } = parsed.data;
+
+  await assertEfaOwnedByCurrentUser(efaId);
+
+  const check = validateImportRows(rows);
+  if (!check.ok) {
+    const issues = check.rows.flatMap((r, i) => r.issues.map((x) => ({ line: i + 1, ...x })));
+    throw new CollecteError(422, `Import refusé : ${check.errorCount} ligne(s) en erreur.`, issues);
+  }
+
+  const reports: SaveReport[] = [];
+  for (const input of toImportSaveInputs(efaId, check.batches)) {
+    const saved = await saveConsumption(input);
+    reports.push({ year: input.year, energyType: input.energyType, writtenMonths: saved.writtenMonths, skipped: saved.skipped });
+  }
+  return { reports, summary: summarizeImport(reports) };
 }

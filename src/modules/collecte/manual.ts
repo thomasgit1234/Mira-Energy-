@@ -11,6 +11,15 @@ export const MONTH_LABELS = [
 
 export const ENERGY_LABELS: Record<EnergyType, string> = { ELECTRICITY: "Électricité", GAS: "Gaz" };
 
+/** Libellés affichés des sources (codes de src/lib/domain.ts). « PDF » = mode 1, import de fichier (PDF ou CSV/Excel). */
+export const SOURCE_LABELS: Record<string, string> = {
+  MANUAL: "saisie manuelle",
+  PDF: "import de fichier",
+  ENEDIS_EXPORT: "export Enedis",
+  GRDF_EXPORT: "export GRDF",
+  ENEDIS_API: "API Enedis",
+};
+
 /**
  * Lit un nombre de kWh saisi « à la française » : "1 234,5" → 1234.5.
  * Renvoie null pour une case vide, NaN pour un texte qui n'est pas un nombre.

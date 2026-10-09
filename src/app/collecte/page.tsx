@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CollecteError, ENERGY_LABELS, loadCollecteContext, type CollecteContext } from "@/modules/collecte";
+import { CollecteError, ENERGY_LABELS, SOURCE_LABELS, loadCollecteContext, type CollecteContext } from "@/modules/collecte";
 import styles from "@/modules/collecte/Collecte.module.css";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +25,7 @@ export default async function Page() {
 
       <div className={styles.actions}>
         <Link href="/collecte/saisie" className={styles.primary}>Saisie manuelle (2.2)</Link>
+        <Link href="/collecte/import" className={styles.secondary}>Import CSV (2.1)</Link>
       </div>
 
       <h2>Données déjà collectées</h2>
@@ -40,7 +41,7 @@ export default async function Page() {
               <tr key={`${c.year}-${c.energyType}`}>
                 <td>{c.year}</td>
                 <td>{ENERGY_LABELS[c.energyType]}</td>
-                <td>{c.sources.join(", ")}</td>
+                <td>{c.sources.map((s) => SOURCE_LABELS[s] ?? s).join(", ")}</td>
                 <td className={styles.num}>{c.monthCount} / 12</td>
                 <td className={styles.num}>{c.validatedCount} / {c.monthCount}</td>
                 <td className={styles.num}>{nf.format(c.totalKwh)}</td>
