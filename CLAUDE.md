@@ -1,6 +1,6 @@
 # Mira Énergie — contexte du projet (à lire en premier)
 
-> Fichier de contexte pour toute personne (ou toute IA) qui reprend le projet. Dernière mise à jour : mercredi 7 octobre 2026.
+> Fichier de contexte pour toute personne (ou toute IA) qui reprend le projet. Dernière mise à jour : jeudi 8 octobre 2026.
 > À placer à la racine du dépôt sous le nom `CLAUDE.md` : l'extension Claude Code le lit automatiquement.
 > **Ne jamais y écrire de mot de passe, de clé, ni de vraie donnée client.**
 
@@ -48,7 +48,7 @@ Les phases **01, 02 et 09** peuvent avancer en parallèle une fois le socle pos�
 Attention : un « track » est un morceau du projet confié à une personne ; une « phase » est une étape dans le temps. Ce ne sont pas la même chose.
 
 ## 5. Échéances
-- **Soutenance intermédiaire de prototypage : semaine du 12 octobre 2026** (date exacte et date limite de remise des documents **à confirmer** avec le tuteur).
+- **Soutenance intermédiaire de prototypage : semaine du 19 octobre 2026** (jour exact et date limite de remise des documents **à confirmer** avec le tuteur).
 - **Soutenance finale : décembre 2026.**
 - **Réunion PFE avec le tuteur : jeudi 8 octobre 2026** (visio).
 
