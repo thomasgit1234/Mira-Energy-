@@ -3,19 +3,11 @@
 // Le contrôle affiché en direct est la MÊME fonction que celle du serveur (manual.ts).
 import { useState } from "react";
 import styles from "./Collecte.module.css";
-import { ENERGY_LABELS, MONTH_LABELS, parseKwh, validateManualEntry, type EntryIssue } from "./manual";
+import { ENERGY_LABELS, MONTH_LABELS, SOURCE_LABELS, parseKwh, validateManualEntry, type EntryIssue } from "./manual";
 import { ENERGY_TYPES, type EnergyType } from "@/lib/domain";
 import type { SaveReport, YearState } from "./repository";
 
 const nf = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
-
-const SOURCE_LABELS: Record<string, string> = {
-  MANUAL: "saisie",
-  PDF: "import",
-  ENEDIS_EXPORT: "export Enedis",
-  GRDF_EXPORT: "export GRDF",
-  ENEDIS_API: "API",
-};
 
 function toText(state: YearState): string[] {
   return state.months.map((m) => (m ? String(m.kwh).replace(".", ",") : ""));
@@ -127,7 +119,7 @@ export function ManualEntryForm({ minYear, maxYear, initial }: Props) {
 
       <table className={styles.table}>
         <thead>
-          <tr><th>Mois</th><th>Consommation (kWh)</th><th>En base</th></tr>
+          <tr><th>Mois</th><th>Consommation (kWh)</th><th className={styles.optional}>En base</th></tr>
         </thead>
         <tbody>
           {MONTH_LABELS.map((label, i) => {
@@ -152,7 +144,7 @@ export function ManualEntryForm({ minYear, maxYear, initial }: Props) {
                   />
                   {issue && <div className={styles.cellError}>{issue.message}</div>}
                 </td>
-                <td>
+                <td className={styles.optional}>
                   {inBase ? (
                     <span className={`${styles.badge} ${inBase.validated ? styles.locked : styles.draft}`}>
                       {inBase.validated ? "🔒 validé" : "non validé"} · {SOURCE_LABELS[inBase.source] ?? inBase.source}

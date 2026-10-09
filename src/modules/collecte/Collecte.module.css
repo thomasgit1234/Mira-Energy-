@@ -32,4 +32,5 @@
 .report p { margin: 4px 0; }
 .reportWarn { border-color: #b7791f; background: #fdf6e8; }
 .empty { color: var(--muted); }
-@media (max-width: 720px) { .table th:nth-child(3), .table td:nth-child(3) { display: none; } }
+.scroll { overflow-x: auto; }
+@media (max-width: 720px) { .optional { display: none; } }
