@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { ClimatError, loadClimatIndicators } from "@/modules/climat";
-import { buildComparatorRows, type ComparatorRow } from "./reference";
+import { buildComparatorRows, suggestReferenceYear, type ComparatorRow } from "./reference";
 
 export class ComparateurError extends Error {
   constructor(
@@ -56,12 +56,13 @@ async function loadIndicators() {
 export async function loadComparator(): Promise<ComparatorData> {
   const { efa } = await requireUserEfa();
   const climat = await loadIndicators();
+  const suggested = suggestReferenceYear(climat.rows); // 5.2 : calculée ici, jamais côté client
   return {
     buildingLabel: climat.buildingLabel,
     efaLabel: `EFA ${efa.entityType} · ${ROLE_LABELS[efa.role] ?? efa.role}`,
     efaId: efa.id,
-    rows: buildComparatorRows(climat.rows),
-    suggested: null,
+    rows: buildComparatorRows(climat.rows, suggested?.year ?? null),
+    suggested,
     chosenYear: null,
   };
 }

@@ -3,7 +3,7 @@
 export const MODULE = "comparateur" as const;
 export {
   REFERENCE_PERIOD, EXCLUDED_YEARS, DEMO_BANNER, SUGGESTION_HELP, RAW_NOTICE, SUGGESTED_LABEL, INELIGIBLE_REASONS,
-  isReferenceYearEligible, isEligibleRow, ineligibleReason, buildComparatorRows, formatKwh, formatRatio,
+  isReferenceYearEligible, isEligibleRow, ineligibleReason, buildComparatorRows, suggestReferenceYear, formatKwh, formatRatio,
 } from "./reference";
 export type { ComparatorRow } from "./reference";
 export { loadComparator, ComparateurError } from "./repository";

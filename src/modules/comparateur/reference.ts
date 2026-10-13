@@ -87,6 +87,24 @@ export function buildComparatorRows(indicators: YearIndicator[], suggestedYear: 
   });
 }
 
+/**
+ * 5.2 — Année suggérée : la plus CONSOMMATRICE parmi les années éligibles (2010-2019, complètes).
+ * Égalité : l'année la plus ancienne (hypothèse). Jamais de moyenne : on renvoie une seule année réelle.
+ * Calculée côté serveur uniquement, puis transmise telle quelle à l'interface.
+ */
+export function suggestReferenceYear(
+  rows: (RowLike & { consumptionKwh: number | null })[],
+): { year: number; consumptionKwh: number } | null {
+  let best: { year: number; consumptionKwh: number } | null = null;
+  for (const r of rows) {
+    if (!isEligibleRow(r) || r.consumptionKwh === null || !Number.isFinite(r.consumptionKwh)) continue;
+    if (!best || r.consumptionKwh > best.consumptionKwh || (r.consumptionKwh === best.consumptionKwh && r.year < best.year)) {
+      best = { year: r.year, consumptionKwh: r.consumptionKwh };
+    }
+  }
+  return best;
+}
+
 const kwhFormat = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 const ratioFormat = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

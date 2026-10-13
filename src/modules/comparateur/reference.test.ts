@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { YearIndicator, YearStatus } from "@/modules/climat";
+import { buildYearIndicators, type YearIndicator, type YearStatus } from "@/modules/climat";
 import { parseConsumptionCsv, validateImportRows } from "@/modules/collecte";
 import {
-  INELIGIBLE_REASONS, buildComparatorRows, formatKwh, formatRatio, ineligibleReason, isEligibleRow, isReferenceYearEligible,
+  INELIGIBLE_REASONS, buildComparatorRows, formatKwh, formatRatio, ineligibleReason, isEligibleRow, isReferenceYearEligible, suggestReferenceYear,
 } from "./reference";
 
 const NBSP = " "; // séparateur de milliers français (espace fine insécable)
@@ -103,5 +103,52 @@ describe("données de démonstration consommations-demo-2010-2018.csv", () => {
     const max = Math.max(...yearly.values(), 47700);
     expect(max).toBe(52800);
     expect([...yearly].filter(([, v]) => v === max).map(([y]) => y)).toEqual([2013]);
+  });
+});
+
+describe("5.2 — suggestReferenceYear", () => {
+  it("propose l'année la plus consommatrice parmi les éligibles", () => {
+    const rows = [ind(2012, "OK", 49200), ind(2013, "OK", 52800), ind(2019, "OK", 47700)];
+    expect(suggestReferenceYear(rows)).toEqual({ year: 2013, consumptionKwh: 52800 });
+  });
+
+  it("égalité : l'année la plus ancienne, quel que soit l'ordre", () => {
+    expect(suggestReferenceYear([ind(2017, "OK", 50000), ind(2012, "OK", 50000), ind(2015, "OK", 50000)])).toEqual({ year: 2012, consumptionKwh: 50000 });
+  });
+
+  it("ignore une année incomplète même si elle est plus élevée", () => {
+    expect(suggestReferenceYear([ind(2011, "ANNEE_INCOMPLETE", 99000), ind(2013, "OK", 52800)])?.year).toBe(2013);
+  });
+
+  it("ignore 2020 et 2021 (et les années après 2019) même si elles sont supérieures", () => {
+    const rows = [ind(2019, "OK", 47700), ind(2020, "OK", 80000), ind(2021, "OK", 94610), ind(2025, "OK", 99999), ind(2009, "OK", 99999)];
+    expect(suggestReferenceYear(rows)).toEqual({ year: 2019, consumptionKwh: 47700 });
+  });
+
+  it("aucune année éligible → null", () => {
+    expect(suggestReferenceYear([])).toBeNull();
+    expect(suggestReferenceYear([ind(2011, "ANNEE_INCOMPLETE", 1), ind(2012, "PAS_DE_CONSOMMATION"), ind(2021, "OK", 9)])).toBeNull();
+  });
+
+  it("ne calcule jamais de moyenne : la valeur renvoyée est celle d'une année réelle", () => {
+    const rows = [ind(2010, "OK", 40000), ind(2011, "OK", 50000), ind(2012, "OK", 60000)];
+    const s = suggestReferenceYear(rows)!;
+    expect(s).toEqual({ year: 2012, consumptionKwh: 60000 });
+    expect(rows.map((r) => r.consumptionKwh)).toContain(s.consumptionKwh);
+    expect(s.consumptionKwh).not.toBe(50000); // la moyenne
+  });
+
+  it("données de démo (fichier 2010-2018 + 2019 du seed) → 2013 ; la suggestion est marquée dans les lignes", () => {
+    const text = readFileSync(join(process.cwd(), "public", "exemples", "consommations-demo-2010-2018.csv"), "utf8");
+    const batches = validateImportRows(parseConsumptionCsv(text).rows, new Date("2026-10-13")).batches;
+    const seed2019 = { year: 2019, energyType: "ELECTRICITY", months: Array.from({ length: 12 }, (_, i) => ({ month: i + 1, kwh: 3600 + (i < 3 || i >= 10 ? 900 : 0) })) };
+    const djuTable = Array.from({ length: 10 }, (_, i) => ({ zone: "02037002", year: 2010 + i, dju: 2500 }));
+    const indicators = buildYearIndicators({ zone: "02037002", djuTable, consumptions: [...batches, seed2019] });
+    const suggested = suggestReferenceYear(indicators);
+    expect(suggested).toEqual({ year: 2013, consumptionKwh: 52800 });
+    const rows = buildComparatorRows(indicators, suggested!.year);
+    expect(rows.filter((r) => r.isSuggested).map((r) => r.year)).toEqual([2013]);
+    expect(rows.find((r) => r.year === 2011)?.ineligibleReason).toBe("année incomplète");
+    expect(rows.find((r) => r.year === 2015)).toMatchObject({ eligible: true, consumptionKwh: 48000 });
   });
 });
