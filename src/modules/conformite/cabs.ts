@@ -5,7 +5,7 @@
 // Objectif Cabs de l'EFA (kWh/an) = Σ sur les lignes de surface de [seuil de la sous-catégorie × surface de la ligne].
 import type { AltitudeBand, CabsRow } from "./cabs-source";
 
-export type CabsErrorCode = "SOUS_CATEGORIE_INCONNUE" | "VALEUR_ABSENTE" | "SURFACE_MANQUANTE";
+export type CabsErrorCode = "SOUS_CATEGORIE_INCONNUE" | "VALEUR_ABSENTE" | "SURFACE_MANQUANTE" | "FICHIER_INDISPONIBLE";
 export type CabsError = { ok: false; code: CabsErrorCode; message: string };
 
 export type CabsThreshold = { ok: true; code: string; label: string; cvc: number; use: number; total: number };
