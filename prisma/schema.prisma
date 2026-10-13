@@ -40,14 +40,16 @@ model Building {
 }
 
 model EFA {
-  id           String        @id @default(uuid())
-  buildingId   String
-  building     Building      @relation(fields: [buildingId], references: [id], onDelete: Cascade) // [D3]
-  entityType   String // "SASU", "SCI", "COLLECTIVITE", "PARTICULAR"
-  siret        String?
-  role         String // "OWNER_OCCUPIER", "LANDLORD", "TENANT"
-  surfaces     SurfaceLine[]
-  consumptions Consumption[]
+  id            String        @id @default(uuid())
+  buildingId    String
+  building      Building      @relation(fields: [buildingId], references: [id], onDelete: Cascade) // [D3]
+  entityType    String // "SASU", "SCI", "COLLECTIVITE", "PARTICULAR"
+  siret         String?
+  role          String // "OWNER_OCCUPIER", "LANDLORD", "TENANT"
+  // [5.3] année de référence choisie (année pleine entre 2010 et 2019, contrôlée par le module comparateur) ; null = pas encore choisie
+  referenceYear Int?
+  surfaces      SurfaceLine[]
+  consumptions  Consumption[]
 }
 
 model SurfaceLine {
