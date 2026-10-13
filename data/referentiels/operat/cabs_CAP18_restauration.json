@@ -1,0 +1,845 @@
+{
+ "categorie": "CAP18 Restauration - Débit de boissons",
+ "unite": "kWh/m²/an (énergie finale)",
+ "tranches_altitude": {
+  "<400": "réf. 100 m",
+  "400-800": "réf. 500 m",
+  "800-1200": "réf. 900 m",
+  "1200-1600": "réf. 1400 m",
+  ">=1600": "réf. 1700 m"
+ },
+ "note": "Case absente = pas de valeur définie pour cette zone et cette altitude. Réserves froid négatif/positif : pas de composante CVC.",
+ "sous_categories": [
+  {
+   "code_sous_categorie": "SCAP1801",
+   "libelle_referentiel": "Restauration et débits de boissons - Administration et bureaux (bureaux standard)",
+   "libelle_arrete": "Restauration et débit de boisson - Administration et bureaux (Bureaux Standards)",
+   "page_pdf": 1,
+   "use_etalon_kWh_m2_an": 50.0,
+   "part_use_variable": 0.77,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 57,
+     "H1b": 66,
+     "H1c": 62,
+     "H2a": 57,
+     "H2b": 50,
+     "H2c": 56,
+     "H2d": 63,
+     "H3": 40,
+     "Guadeloupe": 47,
+     "Martinique": 54,
+     "Guyane": 55,
+     "Réunion": 27,
+     "Mayotte": 56
+    },
+    "400-800": {
+     "H1a": 68,
+     "H1b": 77,
+     "H1c": 71,
+     "H2b": 61,
+     "H2c": 64,
+     "H2d": 66,
+     "H3": 44,
+     "Guadeloupe": 29,
+     "Martinique": 37
+    },
+    "800-1200": {
+     "H1b": 90,
+     "H1c": 81,
+     "H2c": 75,
+     "H2d": 68,
+     "H3": 54,
+     "Réunion": 28
+    },
+    "1200-1600": {
+     "H1b": 125,
+     "H1c": 115,
+     "H2c": 109,
+     "H2d": 99,
+     "H3": 84,
+     "Réunion": 49
+    },
+    ">=1600": {
+     "H1c": 133,
+     "H2c": 117,
+     "H2d": 107,
+     "H3": 92
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1809",
+   "libelle_referentiel": "Bar et café (sans restauration)",
+   "libelle_arrete": "Bar et café (sans restauration)",
+   "page_pdf": 2,
+   "use_etalon_kWh_m2_an": 67.0,
+   "part_use_variable": null,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 132,
+     "H1b": 144,
+     "H1c": 139,
+     "H2a": 126,
+     "H2b": 132,
+     "H2c": 132,
+     "H2d": 138,
+     "H3": 132,
+     "Guadeloupe": 153,
+     "Martinique": 172,
+     "Guyane": 177,
+     "Réunion": 97,
+     "Mayotte": 178
+    },
+    "400-800": {
+     "H1a": 149,
+     "H1b": 161,
+     "H1c": 148,
+     "H2b": 144,
+     "H2c": 136,
+     "H2d": 143,
+     "H3": 130,
+     "Guadeloupe": 102,
+     "Martinique": 124
+    },
+    "800-1200": {
+     "H1b": 178,
+     "H1c": 166,
+     "H2c": 150,
+     "H2d": 149,
+     "H3": 135,
+     "Réunion": 93
+    },
+    "1200-1600": {
+     "H1b": 202,
+     "H1c": 187,
+     "H2c": 171,
+     "H2d": 167,
+     "H3": 151,
+     "Réunion": 145
+    },
+    ">=1600": {
+     "H1c": 201,
+     "H2c": 184,
+     "H2d": 177,
+     "H3": 162
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1802",
+   "libelle_referentiel": "Restaurant gastronomique",
+   "libelle_arrete": "Restaurant gastronomique",
+   "page_pdf": 2,
+   "use_etalon_kWh_m2_an": 179.0,
+   "part_use_variable": 0.93,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 99,
+     "H1b": 105,
+     "H1c": 105,
+     "H2a": 93,
+     "H2b": 97,
+     "H2c": 100,
+     "H2d": 109,
+     "H3": 99,
+     "Guadeloupe": 113,
+     "Martinique": 127,
+     "Guyane": 130,
+     "Réunion": 71,
+     "Mayotte": 131
+    },
+    "400-800": {
+     "H1a": 111,
+     "H1b": 118,
+     "H1c": 109,
+     "H2b": 105,
+     "H2c": 102,
+     "H2d": 108,
+     "H3": 100,
+     "Guadeloupe": 75,
+     "Martinique": 91
+    },
+    "800-1200": {
+     "H1b": 132,
+     "H1c": 122,
+     "H2c": 111,
+     "H2d": 109,
+     "H3": 101,
+     "Réunion": 72
+    },
+    "1200-1600": {
+     "H1b": 155,
+     "H1c": 141,
+     "H2c": 126,
+     "H2d": 123,
+     "H3": 112,
+     "Réunion": 117
+    },
+    ">=1600": {
+     "H1c": 153,
+     "H2c": 139,
+     "H2d": 132,
+     "H3": 118
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1803",
+   "libelle_referentiel": "Restaurant traditionnel ou Brasserie",
+   "libelle_arrete": "Restaurant traditionnel ou Brasserie",
+   "page_pdf": 2,
+   "use_etalon_kWh_m2_an": 133.0,
+   "part_use_variable": 0.88,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 99,
+     "H1b": 105,
+     "H1c": 105,
+     "H2a": 93,
+     "H2b": 97,
+     "H2c": 100,
+     "H2d": 109,
+     "H3": 99,
+     "Guadeloupe": 113,
+     "Martinique": 127,
+     "Guyane": 130,
+     "Réunion": 71,
+     "Mayotte": 131
+    },
+    "400-800": {
+     "H1a": 111,
+     "H1b": 118,
+     "H1c": 109,
+     "H2b": 105,
+     "H2c": 102,
+     "H2d": 108,
+     "H3": 100,
+     "Guadeloupe": 75,
+     "Martinique": 91
+    },
+    "800-1200": {
+     "H1b": 132,
+     "H1c": 122,
+     "H2c": 111,
+     "H2d": 109,
+     "H3": 101,
+     "Réunion": 72
+    },
+    "1200-1600": {
+     "H1b": 155,
+     "H1c": 141,
+     "H2c": 126,
+     "H2d": 123,
+     "H3": 112,
+     "Réunion": 117
+    },
+    ">=1600": {
+     "H1c": 153,
+     "H2c": 139,
+     "H2d": 132,
+     "H3": 118
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1804",
+   "libelle_referentiel": "Cafétéria",
+   "libelle_arrete": "Cafétéria",
+   "page_pdf": 3,
+   "use_etalon_kWh_m2_an": 109.0,
+   "part_use_variable": 0.78,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 132,
+     "H1b": 144,
+     "H1c": 139,
+     "H2a": 126,
+     "H2b": 132,
+     "H2c": 132,
+     "H2d": 138,
+     "H3": 132,
+     "Guadeloupe": 153,
+     "Martinique": 172,
+     "Guyane": 177,
+     "Réunion": 97,
+     "Mayotte": 178
+    },
+    "400-800": {
+     "H1a": 149,
+     "H1b": 161,
+     "H1c": 148,
+     "H2b": 144,
+     "H2c": 136,
+     "H2d": 143,
+     "H3": 130,
+     "Guadeloupe": 102,
+     "Martinique": 124
+    },
+    "800-1200": {
+     "H1b": 178,
+     "H1c": 166,
+     "H2c": 150,
+     "H2d": 149,
+     "H3": 135,
+     "Réunion": 93
+    },
+    "1200-1600": {
+     "H1b": 202,
+     "H1c": 187,
+     "H2c": 171,
+     "H2d": 167,
+     "H3": 151,
+     "Réunion": 145
+    },
+    ">=1600": {
+     "H1c": 201,
+     "H2c": 184,
+     "H2d": 177,
+     "H3": 162
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1815",
+   "libelle_referentiel": "Restauration en service continu en libre-service (avec plateaux) - Self",
+   "libelle_arrete": "Restauration en service continu en libre-service (avec plateaux) - Self",
+   "page_pdf": 3,
+   "use_etalon_kWh_m2_an": 140.0,
+   "part_use_variable": 0.84,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 132,
+     "H1b": 144,
+     "H1c": 139,
+     "H2a": 126,
+     "H2b": 132,
+     "H2c": 132,
+     "H2d": 138,
+     "H3": 132,
+     "Guadeloupe": 153,
+     "Martinique": 172,
+     "Guyane": 177,
+     "Réunion": 97,
+     "Mayotte": 178
+    },
+    "400-800": {
+     "H1a": 149,
+     "H1b": 161,
+     "H1c": 148,
+     "H2b": 144,
+     "H2c": 136,
+     "H2d": 143,
+     "H3": 130,
+     "Guadeloupe": 102,
+     "Martinique": 124
+    },
+    "800-1200": {
+     "H1b": 178,
+     "H1c": 166,
+     "H2c": 150,
+     "H2d": 149,
+     "H3": 135,
+     "Réunion": 93
+    },
+    "1200-1600": {
+     "H1b": 202,
+     "H1c": 187,
+     "H2c": 171,
+     "H2d": 167,
+     "H3": 151,
+     "Réunion": 145
+    },
+    ">=1600": {
+     "H1c": 201,
+     "H2c": 184,
+     "H2d": 177,
+     "H3": 162
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1806",
+   "libelle_referentiel": "Restauration rapide commerciale continue (Burger - Salade - Kebab, …)",
+   "libelle_arrete": "Restauration rapide commerciale continue (Burger - Salade - Kebab, …)",
+   "page_pdf": 3,
+   "use_etalon_kWh_m2_an": 435.0,
+   "part_use_variable": 0.94,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 132,
+     "H1b": 144,
+     "H1c": 139,
+     "H2a": 126,
+     "H2b": 132,
+     "H2c": 132,
+     "H2d": 138,
+     "H3": 132,
+     "Guadeloupe": 153,
+     "Martinique": 172,
+     "Guyane": 177,
+     "Réunion": 97,
+     "Mayotte": 178
+    },
+    "400-800": {
+     "H1a": 149,
+     "H1b": 161,
+     "H1c": 148,
+     "H2b": 144,
+     "H2c": 136,
+     "H2d": 143,
+     "H3": 130,
+     "Guadeloupe": 102,
+     "Martinique": 124
+    },
+    "800-1200": {
+     "H1b": 178,
+     "H1c": 166,
+     "H2c": 150,
+     "H2d": 149,
+     "H3": 135,
+     "Réunion": 93
+    },
+    "1200-1600": {
+     "H1b": 202,
+     "H1c": 187,
+     "H2c": 171,
+     "H2d": 167,
+     "H3": 151,
+     "Réunion": 145
+    },
+    ">=1600": {
+     "H1c": 201,
+     "H2c": 184,
+     "H2d": 177,
+     "H3": 162
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1805",
+   "libelle_referentiel": "Restauration sans service à la place (vente emportée ou livrée)",
+   "libelle_arrete": "Restauration sans service à la place (vente emportée ou livrée)",
+   "page_pdf": 4,
+   "use_etalon_kWh_m2_an": 192.0,
+   "part_use_variable": 0.86,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 68,
+     "H1b": 76,
+     "H1c": 86,
+     "H2a": 64,
+     "H2b": 74,
+     "H2c": 92,
+     "H2d": 115,
+     "H3": 116,
+     "Guadeloupe": 68,
+     "Martinique": 76,
+     "Guyane": 78,
+     "Réunion": 42,
+     "Mayotte": 79
+    },
+    "400-800": {
+     "H1a": 65,
+     "H1b": 72,
+     "H1c": 74,
+     "H2b": 66,
+     "H2c": 75,
+     "H2d": 95,
+     "H3": 93,
+     "Guadeloupe": 44,
+     "Martinique": 54
+    },
+    "800-1200": {
+     "H1b": 72,
+     "H1c": 72,
+     "H2c": 69,
+     "H2d": 81,
+     "H3": 76,
+     "Réunion": 33
+    },
+    "1200-1600": {
+     "H1b": 76,
+     "H1c": 73,
+     "H2c": 69,
+     "H2d": 75,
+     "H3": 67,
+     "Réunion": 45
+    },
+    ">=1600": {
+     "H1c": 75,
+     "H2c": 71,
+     "H2d": 73,
+     "H3": 66
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1807",
+   "libelle_referentiel": "Restauration rapide debout (Sandwicherie)",
+   "libelle_arrete": "Restauration rapide debout - Sandwicherie",
+   "page_pdf": 4,
+   "use_etalon_kWh_m2_an": 155.0,
+   "part_use_variable": 0.84,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 68,
+     "H1b": 76,
+     "H1c": 86,
+     "H2a": 64,
+     "H2b": 74,
+     "H2c": 92,
+     "H2d": 115,
+     "H3": 116,
+     "Guadeloupe": 68,
+     "Martinique": 76,
+     "Guyane": 78,
+     "Réunion": 42,
+     "Mayotte": 79
+    },
+    "400-800": {
+     "H1a": 65,
+     "H1b": 72,
+     "H1c": 74,
+     "H2b": 66,
+     "H2c": 75,
+     "H2d": 95,
+     "H3": 93,
+     "Guadeloupe": 44,
+     "Martinique": 54
+    },
+    "800-1200": {
+     "H1b": 72,
+     "H1c": 72,
+     "H2c": 69,
+     "H2d": 81,
+     "H3": 76,
+     "Réunion": 33
+    },
+    "1200-1600": {
+     "H1b": 76,
+     "H1c": 73,
+     "H2c": 69,
+     "H2d": 75,
+     "H3": 67,
+     "Réunion": 45
+    },
+    ">=1600": {
+     "H1c": 75,
+     "H2c": 71,
+     "H2d": 73,
+     "H3": 66
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1811",
+   "libelle_referentiel": "Restauration collective – Cuisine centrale",
+   "libelle_arrete": "Restauration collective - Cuisine centrale",
+   "page_pdf": 5,
+   "use_etalon_kWh_m2_an": 335.0,
+   "part_use_variable": 0.96,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 68,
+     "H1b": 76,
+     "H1c": 86,
+     "H2a": 64,
+     "H2b": 74,
+     "H2c": 92,
+     "H3": 116,
+     "Guadeloupe": 68,
+     "Martinique": 76,
+     "Guyane": 78,
+     "Réunion": 42,
+     "Mayotte": 79,
+     "H2d": 115
+    },
+    "400-800": {
+     "H1a": 65,
+     "H1b": 72,
+     "H1c": 74,
+     "H2b": 66,
+     "H2c": 75,
+     "H2d": 95,
+     "H3": 93,
+     "Guadeloupe": 44,
+     "Martinique": 54
+    },
+    "800-1200": {
+     "H1b": 72,
+     "H1c": 72,
+     "H2c": 69,
+     "H2d": 81,
+     "H3": 76,
+     "Réunion": 33
+    },
+    "1200-1600": {
+     "H1b": 76,
+     "H1c": 73,
+     "H2c": 69,
+     "H2d": 75,
+     "H3": 67,
+     "Réunion": 45
+    },
+    ">=1600": {
+     "H1c": 75,
+     "H2c": 71,
+     "H2d": 73,
+     "H3": 66
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1808",
+   "libelle_referentiel": "Restauration collective scolaire et universitaire",
+   "libelle_arrete": "Restauration collective scolaire et universitaire",
+   "page_pdf": 5,
+   "use_etalon_kWh_m2_an": 61.0,
+   "part_use_variable": 0.93,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 56,
+     "H1b": 61,
+     "H1c": 54,
+     "H2a": 51,
+     "H2b": 53,
+     "H2c": 47,
+     "H2d": 46,
+     "H3": 39,
+     "Guadeloupe": 44,
+     "Martinique": 49,
+     "Guyane": 50,
+     "Réunion": 30,
+     "Mayotte": 50
+    },
+    "400-800": {
+     "H1a": 67,
+     "H1b": 73,
+     "H1c": 65,
+     "H2b": 64,
+     "H2c": 56,
+     "H2d": 53,
+     "H3": 47,
+     "Guadeloupe": 32,
+     "Martinique": 37
+    },
+    "800-1200": {
+     "H1b": 84,
+     "H1c": 75,
+     "H2c": 68,
+     "H2d": 64,
+     "H3": 55,
+     "Réunion": 41
+    },
+    "1200-1600": {
+     "H1b": 101,
+     "H1c": 90,
+     "H2c": 80,
+     "H2d": 76,
+     "H3": 68,
+     "Réunion": 70
+    },
+    ">=1600": {
+     "H1c": 100,
+     "H2c": 90,
+     "H2d": 83,
+     "H3": 75
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1810",
+   "libelle_referentiel": "Restauration collective avec services - Restauration inter-entreprises",
+   "libelle_arrete": "Restauration collective avec services - Restauration inter-entreprises",
+   "page_pdf": 6,
+   "use_etalon_kWh_m2_an": 130.0,
+   "part_use_variable": 0.96,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 56,
+     "H1b": 61,
+     "H1c": 54,
+     "H2a": 51,
+     "H2b": 53,
+     "H2c": 47,
+     "H2d": 46,
+     "H3": 39,
+     "Guadeloupe": 44,
+     "Martinique": 49,
+     "Guyane": 50,
+     "Réunion": 30,
+     "Mayotte": 50
+    },
+    "400-800": {
+     "H1a": 67,
+     "H1b": 73,
+     "H1c": 65,
+     "H2b": 64,
+     "H2c": 56,
+     "H2d": 53,
+     "H3": 47,
+     "Guadeloupe": 32,
+     "Martinique": 37
+    },
+    "800-1200": {
+     "H1b": 84,
+     "H1c": 75,
+     "H2c": 68,
+     "H2d": 64,
+     "H3": 55,
+     "Réunion": 41
+    },
+    "1200-1600": {
+     "H1b": 101,
+     "H1c": 90,
+     "H2c": 80,
+     "H2d": 76,
+     "H3": 68,
+     "Réunion": 70
+    },
+    ">=1600": {
+     "H1c": 100,
+     "H2c": 90,
+     "H2d": 83,
+     "H3": 75
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1812",
+   "libelle_referentiel": "Restauration et débit de boisson - Réserve et/ou meubles froid négatif",
+   "libelle_arrete": "Restauration et débit de boisson - Réserve et/ou meubles froid négatif",
+   "page_pdf": 6,
+   "use_etalon_kWh_m2_an": 846.0,
+   "part_use_variable": null,
+   "cvc_kWh_m2_an": {}
+  },
+  {
+   "code_sous_categorie": "SCAP1813",
+   "libelle_referentiel": "Restauration et débit de boisson - Réserve et/ou meubles froid positif",
+   "libelle_arrete": "Restauration et débit de boisson - Réserve et/ou meubles froid positif",
+   "page_pdf": 6,
+   "use_etalon_kWh_m2_an": 409.0,
+   "part_use_variable": null,
+   "cvc_kWh_m2_an": {}
+  },
+  {
+   "code_sous_categorie": "SCAP1814",
+   "libelle_referentiel": "Restauration et débit de boissons – Réserve – Température ambiante",
+   "libelle_arrete": "Restauration et débit de boisson - Réserve - Température ambiante",
+   "page_pdf": 6,
+   "use_etalon_kWh_m2_an": 5.0,
+   "part_use_variable": null,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 19,
+     "H1b": 20,
+     "H1c": 20,
+     "H2a": 15,
+     "H2b": 15,
+     "H2c": 12,
+     "H2d": 15,
+     "H3": 7,
+     "Guadeloupe": 6,
+     "Martinique": 7,
+     "Guyane": 6,
+     "Réunion": 3,
+     "Mayotte": 7
+    },
+    "400-800": {
+     "H1a": 29,
+     "H1b": 30,
+     "H1c": 29,
+     "H2b": 24,
+     "H2c": 21,
+     "H2d": 23,
+     "H3": 14,
+     "Guadeloupe": 3,
+     "Martinique": 4
+    },
+    "800-1200": {
+     "H1b": 42,
+     "H1c": 39,
+     "H2c": 31,
+     "H2d": 33,
+     "H3": 22,
+     "Réunion": 1
+    },
+    "1200-1600": {
+     "H1b": 60,
+     "H1c": 55,
+     "H2c": 46,
+     "H2d": 47,
+     "H3": 35,
+     "Réunion": 1
+    },
+    ">=1600": {
+     "H1c": 66,
+     "H2c": 57,
+     "H2d": 57,
+     "H3": 45
+    }
+   }
+  },
+  {
+   "code_sous_categorie": "SCAP1800",
+   "libelle_referentiel": "Restauration - Valeur par défaut",
+   "libelle_arrete": "Restauration et débit de boisson - Valeur par défaut",
+   "page_pdf": 7,
+   "use_etalon_kWh_m2_an": 44.0,
+   "part_use_variable": null,
+   "cvc_kWh_m2_an": {
+    "<400": {
+     "H1a": 45,
+     "H1b": 49,
+     "H1c": 44,
+     "H2a": 40,
+     "H2b": 42,
+     "H2c": 37,
+     "H2d": 37,
+     "H3": 29,
+     "Guadeloupe": 33,
+     "Martinique": 36,
+     "Guyane": 37,
+     "Réunion": 22,
+     "Mayotte": 37
+    },
+    "400-800": {
+     "H1a": 56,
+     "H1b": 60,
+     "H1c": 54,
+     "H2b": 52,
+     "H2c": 46,
+     "H2d": 44,
+     "H3": 37,
+     "Guadeloupe": 23,
+     "Martinique": 27
+    },
+    "800-1200": {
+     "H1b": 71,
+     "H1c": 64,
+     "H2c": 57,
+     "H2d": 55,
+     "H3": 45,
+     "Réunion": 29
+    },
+    "1200-1600": {
+     "H1b": 89,
+     "H1c": 80,
+     "H2c": 70,
+     "H2d": 67,
+     "H3": 58,
+     "Réunion": 49
+    },
+    ">=1600": {
+     "H1c": 90,
+     "H2c": 80,
+     "H2d": 75,
+     "H3": 66
+    }
+   }
+  }
+ ],
+ "source": "Arrêté du 1er août 2025 dit « arrêté valeurs absolues VI », annexes consolidées, section 47 Restauration - Débit de boisson"
+}
