@@ -2,7 +2,8 @@
 //   npm run db:import
 // Formats (À CONFIRMER avec la tutrice, voir data/referentiels/README.md) :
 //   zones-climatiques.csv : postcode;city;zone
-//   dju.csv               : year;zone;dju
+//   dju/dju_mensuel_2010_2025.csv : DJU mensuels Météo-France par station ; format connu UNIQUEMENT de
+//                                   readDjuFile (src/modules/climat/dju-source.ts), qui les agrège par année
 //   categories.csv        : type;code;label;value   (type = CATEGORY | SUBCATEGORY | CABS_THRESHOLD ; value = JSON)
 import "dotenv/config";
 import { readFileSync, existsSync } from "node:fs";
@@ -10,6 +11,7 @@ import { join } from "node:path";
 import { parseCsv } from "../src/lib/csv";
 import { createPrismaClient } from "../src/lib/db";
 import { REFERENCE_TYPES } from "../src/lib/domain";
+import { readDjuFile } from "../src/modules/climat/dju-source";
 
 const dir = join(process.cwd(), "data", "referentiels");
 const read = (f: string) => (existsSync(join(dir, f)) ? parseCsv(readFileSync(join(dir, f), "utf8")) : null);
@@ -27,18 +29,20 @@ async function main() {
       }
       counts.zones = zones.length;
     }
-    const dju = read("dju.csv");
-    if (dju) {
-      for (const d of dju) {
-        const year = Number(d.year), value = Number(d.dju);
-        if (!Number.isInteger(year) || !Number.isFinite(value)) throw new Error(`dju.csv : ligne invalide ${JSON.stringify(d)}`);
+    // DJU (tâche 4.1) : le format du fichier n'est connu QUE de readDjuFile. Table DjYear : climateZone = code station.
+    const djuFile = join(dir, "dju", "dju_mensuel_2010_2025.csv");
+    if (existsSync(djuFile)) {
+      const dju = readDjuFile(djuFile);
+      if (dju.errorCount > 0) throw new Error(`Fichier DJU refusé (${djuFile}) :\n- ${dju.issues.join("\n- ")}`);
+      for (const warning of dju.issues) console.warn(`DJU : ${warning}`); // années incomplètes, ignorées
+      for (const d of dju.rows) {
         await db.djYear.upsert({
-          where: { year_climateZone: { year, climateZone: d.zone } },
-          create: { year, climateZone: d.zone, dju: value },
-          update: { dju: value },
+          where: { year_climateZone: { year: d.year, climateZone: d.zone } },
+          create: { year: d.year, climateZone: d.zone, dju: d.dju },
+          update: { dju: d.dju },
         });
       }
-      counts.dju = dju.length;
+      counts.dju = dju.rows.length;
     }
     const refs = read("categories.csv");
     if (refs) {
