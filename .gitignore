@@ -16,6 +16,7 @@ src/generated/
 
 # données réelles : INTERDIT dans Git (RGPD). Seules les fixtures fictives sont versionnées.
 data/private/
+data/prive/
 *.pdf
 !docs/**/*.pdf
 

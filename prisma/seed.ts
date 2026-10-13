@@ -6,6 +6,10 @@ import { DEMO_CLIMATE_ZONE } from "../src/lib/domain";
 
 const DEMO_EMAIL = process.env.DEV_USER_EMAIL ?? "demo.dupont@example.com";
 const YEAR = new Date().getFullYear() - 1;
+// Station Météo-France de suivi du bâtiment de démo (Aulnois-sous-Laon). Les DJU RÉELS viennent de
+// `npm run db:import` (data/referentiels/dju/) : le seed n'écrit plus aucun DJU. Provisoire : le champ
+// climateZone porte le code station (voir src/modules/climat/README.md).
+const DEMO_DJU_STATION = "02037002";
 
 async function main() {
   const db = createPrismaClient();
@@ -21,10 +25,13 @@ async function main() {
       building = await db.building.create({
         data: {
           address: "1 rue de la Démo", postcode: "00000", city: "Ville Démo",
-          climateZone: DEMO_CLIMATE_ZONE, surfaceTotal: 1200,
+          climateZone: DEMO_DJU_STATION, surfaceTotal: 1200,
           users: { connect: { id: user.id } },
         },
       });
+    } else if (building.climateZone !== DEMO_DJU_STATION) {
+      // Bases créées avant la tâche 4.1 : le bâtiment pointait sur la zone fictive « DEMO ».
+      building = await db.building.update({ where: { id: building.id }, data: { climateZone: DEMO_DJU_STATION } });
     }
 
     let efa = await db.eFA.findFirst({ where: { buildingId: building.id } });
@@ -40,13 +47,8 @@ async function main() {
       });
     }
 
-    for (const [zone, dju] of [["2019", 2500], ["2021", 2600], [String(YEAR), 2400]] as const) {
-      await db.djYear.upsert({
-        where: { year_climateZone: { year: Number(zone), climateZone: DEMO_CLIMATE_ZONE } },
-        create: { year: Number(zone), climateZone: DEMO_CLIMATE_ZONE, dju },
-        update: { dju },
-      });
-    }
+    // Nettoyage : supprime les anciens DJU FICTIFS (zone « DEMO ») écrits par les versions précédentes du seed.
+    await db.djYear.deleteMany({ where: { climateZone: DEMO_CLIMATE_ZONE } });
 
     // Consommations fictives (mêmes formes que celles écrites par saveConsumption).
     for (const year of [2019, YEAR]) {
