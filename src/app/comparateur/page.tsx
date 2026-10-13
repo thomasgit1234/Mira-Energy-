@@ -4,6 +4,7 @@ import {
   type ComparatorData,
 } from "@/modules/comparateur";
 import { ReferenceChart } from "@/modules/comparateur/ReferenceChart";
+import { ReferenceChooser } from "@/modules/comparateur/ReferenceChooser";
 import styles from "@/modules/comparateur/Comparateur.module.css";
 
 export const dynamic = "force-dynamic";
@@ -59,6 +60,14 @@ export default async function Page() {
               <p className={styles.hint}>{SUGGESTION_HELP}</p>
             </div>
           )}
+
+          {data.chosenYear !== null && !data.rows.some((r) => r.year === data!.chosenYear && r.eligible) && (
+            <div className={`${styles.notice} ${styles.warn}`} role="status" data-testid="chosen-ineligible">
+              L&apos;année de référence enregistrée ({data.chosenYear}) n&apos;est plus éligible avec les données actuelles : choisissez-en une autre.
+            </div>
+          )}
+
+          <ReferenceChooser efaId={data.efaId} rows={data.rows} suggested={data.suggested} chosenYear={data.chosenYear} />
 
           {hasConsumption && <ReferenceChart rows={data.rows} chosenYear={data.chosenYear} />}
 

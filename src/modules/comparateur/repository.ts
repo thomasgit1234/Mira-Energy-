@@ -64,7 +64,7 @@ export async function loadComparator(): Promise<ComparatorData> {
     efaId: efa.id,
     rows: buildComparatorRows(climat.rows, suggested?.year ?? null),
     suggested,
-    chosenYear: null,
+    chosenYear: efa.referenceYear ?? null,
   };
 }
 
@@ -78,8 +78,7 @@ export const referenceChoiceSchema = z.object({
  * Contrôles : 400 requête invalide · 401 non connecté · 404 EFA d'un autre utilisateur ·
  * 422 { error, issues: [{ code, message }] } si l'année est refusée — AUCUNE écriture dans tous ces cas.
  *
- * ⚠️ STOCKAGE NON DÉCIDÉ : le schéma Prisma n'a aucun champ pour l'année de référence de l'EFA.
- * Tant que ce n'est pas tranché, un choix VALIDE renvoie 501 (rien n'est écrit).
+ * Stockage : champ EFA.referenceYear (PR schéma dédiée). Un choix valide est écrit puis renvoyé : 200 { ok, chosenYear }.
  */
 export async function chooseReferenceYear(rawInput: unknown): Promise<{ ok: true; chosenYear: number }> {
   const parsed = referenceChoiceSchema.safeParse(rawInput);
@@ -95,5 +94,6 @@ export async function chooseReferenceYear(rawInput: unknown): Promise<{ ok: true
   if (!check.ok) {
     throw new ComparateurError(422, "Cette année ne peut pas être l'année de référence.", [{ code: check.code, message: check.message }]);
   }
-  throw new ComparateurError(501, `Choix de ${year} valide, mais l'enregistrement n'est pas encore branché (stockage de l'année de référence à décider).`);
+  await db.eFA.update({ where: { id: efa.id }, data: { referenceYear: year } });
+  return { ok: true, chosenYear: year };
 }

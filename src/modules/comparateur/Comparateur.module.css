@@ -29,3 +29,11 @@
 .badgeNo { color: #8a5a12; border-color: #e3c58f; background: #fdf6e8; }
 .scroll { overflow-x: auto; }
 .hint { color: var(--muted); font-size: .85rem; }
+.choiceTitle { font-size: 1.05rem; margin: 0 0 6px; color: var(--petrol); }
+.choiceRow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 8px 0; }
+.choiceRow select { padding: 7px 8px; border: 1px solid #b9c4bf; border-radius: 6px; font: inherit; background: #fff; }
+.primary, .secondary { font: inherit; border-radius: 8px; cursor: pointer; padding: 8px 14px; }
+.primary { background: var(--petrol); color: #fff; border: 1px solid var(--petrol); }
+.secondary { background: #fff; color: var(--petrol); border: 1px solid var(--petrol); }
+.primary:disabled, .secondary:disabled { opacity: .55; cursor: not-allowed; }
+.msgOk { color: #1f7a5a; font-weight: 600; }

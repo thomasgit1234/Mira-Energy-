@@ -2,7 +2,7 @@
 //   PUT /api/comparateur/reference → { year, efaId? }
 //   200 { ok, chosenYear } · 400 requête invalide · 401 non connecté · 404 EFA d'un autre utilisateur
 //   422 { error, issues: [{ code: HORS_PERIODE | PAS_DE_DONNEES | ANNEE_INCOMPLETE, message }] } — rien n'est écrit
-//   501 tant que le stockage de l'année de référence n'est pas décidé (aucun champ dans le schéma)
+//   Stockage : EFA.referenceYear
 import { NextResponse } from "next/server";
 import { ComparateurError, chooseReferenceYear } from "@/modules/comparateur";
 

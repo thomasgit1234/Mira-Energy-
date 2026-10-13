@@ -3,14 +3,15 @@
 **Exigence (à reprendre dans le document A)** — Le comparateur affiche les consommations brutes 2010–2019 (histogramme +
 tableau équivalent) avec le kWh/DJU indicatif ; il signale les années non éligibles (2020/2021 exclues, hors période,
 incomplètes, sans consommation) ; il suggère l'année éligible la plus consommatrice (égalité : la plus ancienne) ; un choix
-d'année refusé n'écrit rien (HTTP 422).
+d'année refusé n'écrit rien (HTTP 422) ; un choix valide est enregistré (`EFA.referenceYear`) et peut être changé.
 
 **Données de démonstration FICTIVES** (bandeau affiché sur la page).
 
 ## Pré-requis
 ```
 npm run demo        # une fois (ou : npm run db:import puis npm run db:seed)
-npm run dev
+npm run db:migrate  # applique la migration EFA.referenceYear (PR schéma)
+npm run dev         # à (re)lancer APRÈS la migration, sinon « Unknown argument referenceYear »
 ```
 Puis importer l'historique fictif : **http://localhost:3000/collecte/import** → fichier `consommations-demo-2010-2018.csv`
 (lien de téléchargement sur la page, ou `public/exemples/`) → **Importer**. Attendu : 116 lignes, 0 erreur, « 116 mois enregistrés ».
@@ -18,7 +19,7 @@ Puis importer l'historique fictif : **http://localhost:3000/collecte/import** �
 ## Automatique
 | Vérification | Commande | Attendu |
 |---|---|---|
-| Comparateur, suggestion, validation du choix (31 tests) | `npx vitest run src/modules/comparateur` | 31 passés |
+| Comparateur, suggestion, validation et enregistrement du choix (41 tests) | `npx vitest run src/modules/comparateur` | 41 passés |
 | Projet complet | `npm run check` | tout vert |
 
 ## Manuelle — http://localhost:3000/comparateur
@@ -32,6 +33,9 @@ Puis importer l'historique fictif : **http://localhost:3000/collecte/import** �
 | 6 | Regarder 2015 | 48 000 kWh (électricité + gaz), éligible | ☐ |
 | 7 | Tableau, années suivantes | 2020 et 2021 : « 2020 et 2021 : exclues du suivi des objectifs » ; 2022–2025 : « hors période » | ☐ |
 | 8 | Mention sous le titre | « Réduction brute, avant la correction climatique que fait OPERAT. » | ☐ |
+| 9 | Bloc « Année de référence » | « Aucune année de référence n'est encore choisie » + bouton « Retenir cette année (2013) » ; la liste ne propose que les années éligibles (pas 2011) | ☐ |
+| 10 | Cliquer « Retenir cette année (2013) » | Badge « Référence choisie 2013 » (bloc, tableau) ; barre 2013 au contour plein | ☐ |
+| 11 | Choisir 2017 dans la liste, « Enregistrer ce choix » | Badge « Référence choisie 2017 » ; `npm run db:studio` → `EFA.referenceYear = 2017` | ☐ |
 
 Valeurs attendues (kWh / kWh/DJU, station 02037002) : 2010 46 800 / 15,17 · 2011 32 000 / 13,54 (incomplète) ·
 2012 49 200 / 18,11 · **2013 52 800 / 17,90** · 2014 45 600 / 19,69 · 2015 48 000 / 18,76 · 2016 44 400 / 16,45 ·
@@ -44,12 +48,12 @@ curl -X PUT -H "Content-Type: application/json" -d "{\"year\":2020}" http://loca
 curl -X PUT -H "Content-Type: application/json" -d "{\"year\":2011}" http://localhost:3000/api/comparateur/reference  → 422 ANNEE_INCOMPLETE
 curl -X PUT -H "Content-Type: application/json" -d "{\"year\":2016}" ...  (après suppression de 2016) → 422 PAS_DE_DONNEES
 curl -X PUT ... -d "{\"year\":2013,\"efaId\":\"pas-a-moi\"}"      → 404
-curl -X PUT ... -d "{\"year\":2013}"                              → 501 tant que le stockage n'est pas décidé (puis 200)
+curl -X PUT ... -d "{\"year\":2013}"                              → 200 { ok: true, chosenYear: 2013 }
 ```
 Après chaque refus : `GET /api/comparateur` renvoie le même `chosenYear` qu'avant (rien n'est écrit).
 
 ## Remise à l'état du seed
-Supprimer les années 2010–2018 importées (`npm run db:studio`, table `Consumption`), ou `npm run db:reset` puis `npm run db:import`
+Supprimer les années 2010–2018 importées et remettre `EFA.referenceYear` à vide (`npm run db:studio`), ou `npm run db:reset` puis `npm run db:import`
 (⚠️ efface toutes les données locales).
 
 ## Preuves à garder (document B)

@@ -21,8 +21,10 @@ Comparer les consommations **brutes** 2010–2019, suggérer l'année de référ
 |---|---|
 | `reference.ts` | Fonctions pures : `isReferenceYearEligible`, `isEligibleRow`, `ineligibleReason`, `buildComparatorRows` (5.1), `suggestReferenceYear` (5.2), `validateReferenceChoice` (5.3), formats français, constantes (bandeau de démo, textes). |
 | `repository.ts` | `loadComparator()` (5.1/5.2, lecture seule) ; `chooseReferenceYear()` (5.3). Serveur uniquement. |
+| `ReferenceChooser.tsx` | Choix de l'année (5.3) : sélection parmi les années éligibles, badge « Référence choisie », bouton « Retenir cette année ». |
 | `ReferenceChart.tsx` | Histogramme SVG pur (aucune dépendance), accessible (`role="img"`, `<title>`, `<desc>`, tableau équivalent sur la page). |
 | `reference.test.ts` | Tests, dont la suggestion sur le fichier de démo `public/exemples/consommations-demo-2010-2018.csv`. |
+| `repository.test.ts` | `chooseReferenceYear` de bout en bout (base simulée) : un refus n'écrit rien. |
 
 ## Hypothèses (à valider)
 1. **Égalité** de consommation entre deux années éligibles : l'année la plus **ancienne** est suggérée.
@@ -44,10 +46,12 @@ Comparer les consommations **brutes** 2010–2019, suggérer l'année de référ
 | Non connecté | 401 |
 | `efaId` d'un autre utilisateur | 404 « EFA introuvable. » |
 | Année refusée | 422 `{ error, issues: [{ code, message }] }`, code `HORS_PERIODE` (dont 2020/2021), `PAS_DE_DONNEES` ou `ANNEE_INCOMPLETE` — **rien n'est écrit** |
-| Année valide | 200 `{ ok: true, chosenYear }` — **pas encore branché : 501 tant que le stockage n'est pas décidé** |
+| Année valide | 200 `{ ok: true, chosenYear }` — écrit `EFA.referenceYear` |
 
-**Stockage : à décider.** Le schéma Prisma n'a aucun champ pour l'année de référence d'une EFA. Le schéma n'a pas été
-modifié ; `GET /api/comparateur` renvoie `chosenYear: null`.
+**Stockage : champ `EFA.referenceYear Int?`** (décision de Léo), ajouté par la **PR schéma dédiée** `feat/schema-reference-year`
+(migration `20261013200708_efa_reference_year`, colonne nullable, label `schema`) — **à fusionner avant ce module**, puis
+`npm run db:migrate`. `null` = pas encore choisie ; `GET /api/comparateur` renvoie `chosenYear`. Si l'année enregistrée
+devient non éligible (données modifiées), la page le signale.
 
 ## Règles
 - Le code métier vit dans `src/modules/comparateur/` ; ne modifiez pas les autres modules sans PR dédiée.
