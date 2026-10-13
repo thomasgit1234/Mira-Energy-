@@ -48,6 +48,9 @@ model EFA {
   role          String // "OWNER_OCCUPIER", "LANDLORD", "TENANT"
   // [5.3] année de référence choisie (année pleine entre 2010 et 2019, contrôlée par le module comparateur) ; null = pas encore choisie
   referenceYear Int?
+  // Surface de l'EFA (m²) : la somme de ses lignes de surface doit lui être égale (règle 1.3, une surface par EFA) ;
+  // null = repli sur Building.surfaceTotal (bâtiment à une seule EFA)
+  surfaceTotal  Float?
   surfaces      SurfaceLine[]
   consumptions  Consumption[]
 }
