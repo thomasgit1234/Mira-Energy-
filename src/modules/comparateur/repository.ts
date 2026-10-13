@@ -1,9 +1,10 @@
 // Tâches 5.1 à 5.3 — accès base du module « comparateur ».
 // Les règles sont dans reference.ts (pures). Serveur uniquement : ne pas importer depuis un composant client.
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { ClimatError, loadClimatIndicators } from "@/modules/climat";
-import { buildComparatorRows, suggestReferenceYear, type ComparatorRow } from "./reference";
+import { buildComparatorRows, suggestReferenceYear, validateReferenceChoice, type ComparatorRow } from "./reference";
 
 export class ComparateurError extends Error {
   constructor(
@@ -65,4 +66,34 @@ export async function loadComparator(): Promise<ComparatorData> {
     suggested,
     chosenYear: null,
   };
+}
+
+export const referenceChoiceSchema = z.object({
+  year: z.number(),
+  efaId: z.string().min(1).optional(), // facultatif : par défaut, l'EFA de l'utilisateur
+});
+
+/**
+ * 5.3 — Choix de l'année de référence : PUT /api/comparateur/reference { year, efaId? }.
+ * Contrôles : 400 requête invalide · 401 non connecté · 404 EFA d'un autre utilisateur ·
+ * 422 { error, issues: [{ code, message }] } si l'année est refusée — AUCUNE écriture dans tous ces cas.
+ *
+ * ⚠️ STOCKAGE NON DÉCIDÉ : le schéma Prisma n'a aucun champ pour l'année de référence de l'EFA.
+ * Tant que ce n'est pas tranché, un choix VALIDE renvoie 501 (rien n'est écrit).
+ */
+export async function chooseReferenceYear(rawInput: unknown): Promise<{ ok: true; chosenYear: number }> {
+  const parsed = referenceChoiceSchema.safeParse(rawInput);
+  if (!parsed.success) throw new ComparateurError(400, "Requête invalide.");
+  const { year, efaId } = parsed.data;
+
+  const { efa } = await requireUserEfa();
+  // Cloisonnement (9.3) : on ne distingue pas « inexistante » et « pas la vôtre ».
+  if (efaId !== undefined && efaId !== efa.id) throw new ComparateurError(404, "EFA introuvable.");
+
+  const { rows } = await loadComparator();
+  const check = validateReferenceChoice(year, rows);
+  if (!check.ok) {
+    throw new ComparateurError(422, "Cette année ne peut pas être l'année de référence.", [{ code: check.code, message: check.message }]);
+  }
+  throw new ComparateurError(501, `Choix de ${year} valide, mais l'enregistrement n'est pas encore branché (stockage de l'année de référence à décider).`);
 }

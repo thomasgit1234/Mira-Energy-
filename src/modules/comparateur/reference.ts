@@ -105,6 +105,33 @@ export function suggestReferenceYear(
   return best;
 }
 
+export type ReferenceChoiceCode = "HORS_PERIODE" | "PAS_DE_DONNEES" | "ANNEE_INCOMPLETE";
+export type ReferenceChoiceResult = { ok: true } | { ok: false; code: ReferenceChoiceCode; message: string };
+
+/**
+ * 5.3 — L'année choisie peut-elle devenir l'année de référence ? Même règle que isEligibleRow, avec un code d'erreur.
+ * Hypothèse : une année sans DJU (DJU_MANQUANT) est refusée en PAS_DE_DONNEES (complétude non vérifiable).
+ */
+export function validateReferenceChoice(year: unknown, rows: RowLike[]): ReferenceChoiceResult {
+  if (typeof year !== "number" || !Number.isInteger(year) || !isReferenceYearEligible(year)) {
+    const message = typeof year === "number" && EXCLUDED_YEARS.includes(year)
+      ? `${year} : 2020 et 2021 se déclarent sur OPERAT mais sont exclues comme année de référence et du suivi des objectifs.`
+      : `L'année de référence doit être comprise entre ${REFERENCE_PERIOD.from} et ${REFERENCE_PERIOD.to}.`;
+    return { ok: false, code: "HORS_PERIODE", message };
+  }
+  const row = rows.find((r) => r.year === year);
+  if (!row || row.status === "PAS_DE_CONSOMMATION") {
+    return { ok: false, code: "PAS_DE_DONNEES", message: `Aucune consommation enregistrée pour ${year}.` };
+  }
+  if (row.status === "ANNEE_INCOMPLETE") {
+    return { ok: false, code: "ANNEE_INCOMPLETE", message: `${year} est incomplète : il faut 12 mois pour chaque énergie.` };
+  }
+  if (row.status === "DJU_MANQUANT") {
+    return { ok: false, code: "PAS_DE_DONNEES", message: `DJU manquant pour ${year} : lancez npm run db:import.` };
+  }
+  return { ok: true };
+}
+
 const kwhFormat = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 const ratioFormat = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

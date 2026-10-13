@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { buildYearIndicators, type YearIndicator, type YearStatus } from "@/modules/climat";
 import { parseConsumptionCsv, validateImportRows } from "@/modules/collecte";
 import {
-  INELIGIBLE_REASONS, buildComparatorRows, formatKwh, formatRatio, ineligibleReason, isEligibleRow, isReferenceYearEligible, suggestReferenceYear,
+  INELIGIBLE_REASONS, buildComparatorRows, formatKwh, formatRatio, ineligibleReason, isEligibleRow, isReferenceYearEligible, suggestReferenceYear, validateReferenceChoice,
 } from "./reference";
 
 const NBSP = " "; // séparateur de milliers français (espace fine insécable)
@@ -150,5 +150,34 @@ describe("5.2 — suggestReferenceYear", () => {
     expect(rows.filter((r) => r.isSuggested).map((r) => r.year)).toEqual([2013]);
     expect(rows.find((r) => r.year === 2011)?.ineligibleReason).toBe("année incomplète");
     expect(rows.find((r) => r.year === 2015)).toMatchObject({ eligible: true, consumptionKwh: 48000 });
+  });
+});
+
+describe("5.3 — validateReferenceChoice", () => {
+  const rows = [ind(2011, "ANNEE_INCOMPLETE", 32000), ind(2012, "PAS_DE_CONSOMMATION"), ind(2013, "OK", 52800),
+    ind(2014, "DJU_MANQUANT", 45600), ind(2021, "OK", 94610)];
+
+  it("accepte une année éligible complète", () => expect(validateReferenceChoice(2013, rows)).toEqual({ ok: true }));
+
+  it("HORS_PERIODE : avant 2010, après 2019, non entier", () => {
+    for (const y of [2009, 2022, 2013.5, "2013", null]) {
+      expect(validateReferenceChoice(y, rows)).toMatchObject({ ok: false, code: "HORS_PERIODE" });
+    }
+  });
+
+  it("HORS_PERIODE avec un message dédié pour 2020 et 2021, même avec des données", () => {
+    const r = validateReferenceChoice(2021, rows);
+    expect(r).toMatchObject({ ok: false, code: "HORS_PERIODE" });
+    expect(!r.ok && r.message).toContain("2020 et 2021");
+  });
+
+  it("PAS_DE_DONNEES : année sans consommation ou absente, et année sans DJU", () => {
+    expect(validateReferenceChoice(2012, rows)).toMatchObject({ ok: false, code: "PAS_DE_DONNEES" });
+    expect(validateReferenceChoice(2016, rows)).toMatchObject({ ok: false, code: "PAS_DE_DONNEES" });
+    expect(validateReferenceChoice(2014, rows)).toMatchObject({ ok: false, code: "PAS_DE_DONNEES" });
+  });
+
+  it("ANNEE_INCOMPLETE : moins de 12 mois", () => {
+    expect(validateReferenceChoice(2011, rows)).toMatchObject({ ok: false, code: "ANNEE_INCOMPLETE" });
   });
 });
