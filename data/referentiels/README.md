@@ -17,6 +17,13 @@ Import : `npm run db:import` (idempotent).
 - **Mise à jour** : un seul fichier `referentiel_activites_OPERAT_v<X>.csv` dans le dossier ; pour passer en v9.1,
   remplacer le fichier puis relancer `npm run db:import`.
 
+## `operat/departement_zone_climatique.csv` — zone climatique par département RÉELLE
+- **Source** : pack Mira du 09/10/2026, table dérivée des stations météo du référentiel OPERAT V9.0 (ADEME, onglet 6).
+- **Format** : `departement;zone_climatique;remarque`, connu uniquement de `src/modules/batiment/zone-climatique.ts`.
+- Zone unique par département, sauf l'Hérault (34 : `H2c/H3`, choisir via la station). Corse en 2A / 2B. Pour les DOM
+  (971 à 976), la colonne donne le nom du territoire : la zone est traitée comme « non définie ».
+- Pas importée en base : lue à la demande ; `npm run db:import` se contente de la vérifier.
+
 ## `operat/cabs_CAP18_restauration.json` — valeurs absolues Cabs RÉELLES
 Arrêté du 1er août 2025 « valeurs absolues VI », catégorie CAP18 uniquement. Lu par `src/modules/conformite/cabs-source.ts`.
 

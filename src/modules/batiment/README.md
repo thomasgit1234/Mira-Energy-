@@ -24,6 +24,18 @@ Identifier le bâtiment, son EFA et son propriétaire (adresse, RNB/BDNB, zone c
   `referentiel_activites_OPERAT_v<X>.csv` à la fois, sinon erreur), relancer `npm run db:import`, puis `npm test`
   (le test « vrai référentiel » vérifie les comptes : à mettre à jour avec la nouvelle version).
 
+## Zone climatique depuis le code postal (tâche 1.2, logique faite)
+- **Source** : `data/referentiels/operat/departement_zone_climatique.csv` (pack Mira du 09/10/2026, table dérivée des
+  stations météo du référentiel OPERAT V9.0, onglet 6). Lue à la demande, **pas importée en base** (pas de PR schema).
+- **Lecteur unique** : `zone-climatique.ts` (`parseDepartmentZones`, `readDepartmentZones`).
+- `departmentFromPostcode` (pure) : 02000 → 02 ; DOM 97100 → 971 ; Corse 20xxx → erreur `CORSE_AMBIGUE` (2A ou 2B ne
+  se déduit pas du code postal).
+- `climateZoneForPostcode` : renvoie une zone unique (02000 → H1a), ou une erreur explicite, jamais une zone devinée :
+  `CODE_POSTAL_INVALIDE`, `CORSE_AMBIGUE`, `DEPARTEMENT_ABSENT`, `ZONE_NON_DEFINIE` (DOM : le fichier donne le nom du
+  territoire, pas de zone), `PLUSIEURS_ZONES` (Hérault 34 : H2c/H3, choisir via la station).
+- `npm run db:import` vérifie la table et refuse un fichier abîmé.
+- Reste à faire : brancher sur le formulaire bâtiment (tâche 1.1) et la tranche d'altitude (IGN, D15).
+
 ## À faire dans ce module
 - [ ] Formulaire bâtiment + EFA
 - [ ] Recherche d'adresse / identifiant RNB (tâche 1.1)

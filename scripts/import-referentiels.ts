@@ -1,36 +1,31 @@
 // Importe les fichiers de data/referentiels/*.csv en base (idempotent : relancer ne duplique rien).
 //   npm run db:import
-// Formats (À CONFIRMER avec la tutrice, voir data/referentiels/README.md) :
-//   zones-climatiques.csv : postcode;city;zone
+// Sources (voir data/referentiels/README.md) :
 //   dju/dju_mensuel_2010_2025.csv : DJU mensuels Météo-France par station ; format connu UNIQUEMENT de
 //                                   readDjuFile (src/modules/climat/dju-source.ts), qui les agrège par année
 //   operat/referentiel_activites_OPERAT_v<X>.csv : référentiel d'activités ADEME (réel) ; format connu UNIQUEMENT de
 //                                   readOperatActivities (src/modules/batiment/operat-activites.ts)
-// categories.csv (fictif) n'est plus lu : il sera supprimé avec le contexte provisoire de la conformité.
+//   operat/departement_zone_climatique.csv : PAS importée en base (lue à la demande par
+//                                   src/modules/batiment/zone-climatique.ts) ; seulement vérifiée ici
+// categories.csv et zones-climatiques.csv (fictifs) ne sont plus lus : supprimés à la branche site-laon.
 import "dotenv/config";
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { parseCsv } from "../src/lib/csv";
 import { createPrismaClient } from "../src/lib/db";
 import { readOperatActivities } from "../src/modules/batiment/operat-activites";
+import { DEPARTMENT_ZONES_FILE, readDepartmentZones } from "../src/modules/batiment/zone-climatique";
 import { readDjuFile } from "../src/modules/climat/dju-source";
 
 const dir = join(process.cwd(), "data", "referentiels");
-const read = (f: string) => (existsSync(join(dir, f)) ? parseCsv(readFileSync(join(dir, f), "utf8")) : null);
 
 async function main() {
   const db = createPrismaClient();
   const counts: Record<string, number> = {};
   try {
-    const zones = read("zones-climatiques.csv");
-    if (zones) {
-      for (const z of zones) {
-        const existing = await db.climateZone.findFirst({ where: { postcode: z.postcode, city: z.city } });
-        if (existing) await db.climateZone.update({ where: { id: existing.id }, data: { zone: z.zone } });
-        else await db.climateZone.create({ data: { postcode: z.postcode, city: z.city, zone: z.zone } });
-      }
-      counts.zones = zones.length;
-    }
+    // Table département → zone (tâche 1.2) : vérifiée pour signaler tout de suite un fichier abîmé.
+    const zones = readDepartmentZones(join(process.cwd(), DEPARTMENT_ZONES_FILE));
+    if (zones.issues.length > 0) throw new Error(`Table département → zone refusée :\n- ${zones.issues.join("\n- ")}`);
+    counts.departements = zones.rows.length;
     // DJU (tâche 4.1) : le format du fichier n'est connu QUE de readDjuFile. Table DjYear : climateZone = code station.
     const djuFile = join(dir, "dju", "dju_mensuel_2010_2025.csv");
     if (existsSync(djuFile)) {
