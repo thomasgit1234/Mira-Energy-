@@ -5,7 +5,7 @@ Méthode relative (Crelat), méthode absolue (Cabs) et verdict aux jalons 2030 /
 - **Piste conseillée** : T5 (voir docs/REPARTITION.md)
 - **Page** : `src/app/conformite/page.tsx` — **API** : `GET /api/conformite` (lecture seule, aucune écriture en base)
 - **Données** : comparateur (`loadComparator` : année de référence, consommations annuelles), surfaces (`loadSurfacesContext`),
-  fichier Cabs `data/referentiels/operat/cabs_CAP18_restauration.json`
+  bâtiment (`loadUserSite`, `climateZoneForPostcode`, `SITE_ALTITUDE_BAND`), fichier Cabs `data/referentiels/operat/cabs_CAP18_restauration.json`
 - **Recette** : `docs/RECETTE-6.md`
 
 ## Règles (V7.3 + cadrage Mira du 9 octobre)
@@ -26,8 +26,8 @@ Méthode relative (Crelat), méthode absolue (Cabs) et verdict aux jalons 2030 /
 | `cabs-source.ts` | 6.2 — `parseCabsJson` / `readCabsFile` : **seul code qui connaît le format du fichier Cabs**. |
 | `cabs.ts` | 6.2 — `cabsThreshold`, `computeCabs` (purs ; erreurs `SOUS_CATEGORIE_INCONNUE`, `VALEUR_ABSENTE`, `SURFACE_MANQUANTE`, `FICHIER_INDISPONIBLE`). |
 | `verdict.ts` | 6.3 — `pickCurrentYear`, `evaluateVerdict` (purs). |
-| `provisional.ts` | ⚠️ Contexte de démonstration provisoire (voir plus bas). |
-| `repository.ts` | `loadConformite()` : assemble le tout, lecture seule ; seul utilisateur de `provisional.ts`. |
+| `site-efas.ts` | `cabsForEfas` (pur) : Cabs des autres EFA du site, pour l'encadré « Autres EFA du site ». |
+| `repository.ts` | `loadConformite()` : assemble le tout, lecture seule (contexte du site : voir plus bas). |
 
 ## Hypothèses (à valider)
 1. « Satisfaite » = consommation **≤** objectif.
@@ -42,20 +42,24 @@ Méthode relative (Crelat), méthode absolue (Cabs) et verdict aux jalons 2030 /
 8. **Réserves froid** SCAP1812 / SCAP1813 : objet CVC vide dans le fichier → **VALEUR_ABSENTE** (décision de Léo), jamais 0.
    Une seule ligne sans valeur rend tout l'objectif Cabs non calculable (pas de total partiel).
 
-## ⚠️ Contexte provisoire à supprimer
-`provisional.ts`, utilisé **uniquement** par `repository.ts` (et vérifié par `provisional.test.ts`) :
-- `DEMO_SITE` : zone **H1a** (département 02, Laon), altitude **< 400 m** ;
-- `DEMO_SUBCATEGORY_TO_OPERAT` : DEMO_RESTAURANT → SCAP1803, DEMO_RESTAURANT_RESERVE → SCAP1803, DEMO_BUREAU_OUVERT → SCAP1801.
+## Contexte du site (fin du contexte provisoire)
+Lu par `repository.ts` via l'API du module bâtiment (`@/modules/batiment`) :
+- **zone climatique** = `climateZoneForPostcode` sur le code postal du bâtiment (02000 → département 02 → **H1a**, table
+  département → zone OPERAT v9.0). Zone impossible à déduire (Corse, Hérault, DOM, département absent) → Cabs **non calculable**
+  avec la raison, jamais de zone devinée ;
+- **tranche d'altitude** = constante `SITE_ALTITUDE_BAND = "<400"` (D15, **à confirmer IGN**) ;
+- **codes OPERAT** = `subCategoryCode` des lignes de surface (référentiel v9.0), sans table de correspondance.
 
-Sera remplacé par les tâches 1.1/1.2 (adresse, zone climatique, altitude du site de Laon) et le référentiel OPERAT v9.0
-(sous-catégories réelles). Pour le retirer : supprimer `provisional.ts` et son test, puis lire zone, altitude et codes OPERAT
-depuis le bâtiment et les lignes de surface dans `repository.ts`.
+L'API renvoie ce contexte dans `site { postcode, city, department, zone, altitudeBand, sources }`.
 
 ## Limites
-- **Une seule EFA** (la première du bâtiment de l'utilisateur, comme les surfaces) ; une seule catégorie Cabs (CAP18 Restauration).
+- **Verdict sur une seule EFA** (la première du bâtiment de l'utilisateur, comme les surfaces, D18). Les autres EFA du site
+  n'ont que leur Cabs, dans l'encadré « Autres EFA du site » ; ce qu'il faut pour gérer plusieurs EFA est listé dans
+  `docs/RECETTE-OPERAT.md`.
+- **Une seule catégorie Cabs** (CAP18 Restauration) : l'EFA bureaux (SCAP0401, CAP04) a un Cabs **non calculable**
+  (`SOUS_CATEGORIE_INCONNUE`), son verdict reposera sur Crelat seul ou restera INDÉTERMINÉ.
 - Surface = lignes de surface de l'EFA (tâche 1.3) ; pas de distinction de surface par usage au-delà de ces lignes.
-- **Données de démo fictives** (consommations, bâtiment, sous-catégories DEMO) ; seul le fichier Cabs est réglementaire.
-- La ligne `CABS_THRESHOLD` fictive (999) de `data/referentiels/categories.csv` n'est **pas** utilisée.
+- **Consommations et site fictifs** (Laon 02000, sans adresse réelle) ; le fichier Cabs et les référentiels OPERAT sont réels.
 
 ## Règles
 - Le code métier vit dans `src/modules/conformite/` ; ne modifiez pas les autres modules sans PR dédiée.

@@ -3,7 +3,8 @@
 Les dossiers `dju/` et `operat/` contiennent des données **réelles et sourcées** (voir plus bas). Toute valeur
 réglementaire (DJU, Cabs, catégorie OPERAT) doit être sourcée ; à défaut, elle est marquée fictive ou « non calculable ».
 
-- **categories.csv et zones-climatiques.csv : fictifs, plus lus, supprimés à la branche site-laon.**
+- Les anciens fichiers fictifs categories.csv et zones-climatiques.csv ont été supprimés (branche site-laon) ; le test
+  `scripts/no-demo-codes.test.ts` vérifie qu'aucun code DEMO_* ne revient.
 
 Import : `npm run db:import` (idempotent).
 
