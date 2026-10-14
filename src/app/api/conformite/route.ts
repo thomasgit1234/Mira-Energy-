@@ -1,5 +1,5 @@
 // API de la conformité (tâches 6.1 à 6.3). Lecture seule.
-//   GET /api/conformite → { buildingLabel, efaLabel, reference, crelat, cabs, current, verdict, provisionalContext }
+//   GET /api/conformite → { buildingLabel, efaLabel, reference, crelat, cabs, current, verdict, site, otherEfas, cabsCoverageNote }
 import { NextResponse } from "next/server";
 import { ConformiteError, loadConformite } from "@/modules/conformite";
 

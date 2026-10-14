@@ -10,4 +10,6 @@ export type { CabsErrorCode, CabsError, CabsThreshold, CabsLine, CabsLineInput, 
 export { evaluateVerdict, pickCurrentYear, STATUS_LABELS, WAY_LABELS } from "./verdict";
 export type { Verdict, MilestoneVerdict, MethodOutcome, VerdictStatus, FavorableWay } from "./verdict";
 export { loadConformite, ConformiteError } from "./repository";
-export type { ConformiteData } from "./repository";
+export type { ConformiteData, SiteContext } from "./repository";
+export { CABS_COVERAGE_NOTE, cabsForEfas } from "./site-efas";
+export type { EfaCabsInput, EfaCabs } from "./site-efas";
