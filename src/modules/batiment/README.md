@@ -36,6 +36,14 @@ Identifier le bâtiment, son EFA et son propriétaire (adresse, RNB/BDNB, zone c
 - `npm run db:import` vérifie la table et refuse un fichier abîmé.
 - Reste à faire : brancher sur le formulaire bâtiment (tâche 1.1) et la tranche d'altitude (IGN, D15).
 
+## Site de l'utilisateur (`site.ts`)
+- `loadUserSite()` (serveur) : bâtiment de la première EFA de l'utilisateur, son code postal et toutes ses EFA (triées par id,
+  surface de l'EFA avec repli sur celle du bâtiment, lignes de surface). Utilisé par la conformité.
+- `SITE_ALTITUDE_BAND = "<400"` : tranche d'altitude du site de démo de Laon, **à confirmer (IGN)**, constante isolée (D15)
+  tant que la tâche 1.1 ne lit pas l'altitude.
+- Site de démonstration (seed) : « Site de démonstration (fictif) », Laon 02000, sans adresse postale réelle ; EFA
+  restauration (SCAP1803, 1 200 m², toujours la première) et EFA bureaux (SCAP0401, 500 m², id `<restauration>-bureaux`).
+
 ## À faire dans ce module
 - [ ] Formulaire bâtiment + EFA
 - [ ] Recherche d'adresse / identifiant RNB (tâche 1.1)

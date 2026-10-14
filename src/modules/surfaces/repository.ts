@@ -81,7 +81,7 @@ export async function loadSurfacesContext(): Promise<SurfacesContext> {
   return {
     efaId: efa.id,
     buildingLabel: `${efa.building.address}, ${efa.building.postcode} ${efa.building.city}`,
-    surfaceTotal: efa.building.surfaceTotal,
+    surfaceTotal: efa.surfaceTotal ?? efa.building.surfaceTotal, // surface de l'EFA, repli sur le bâtiment (D14)
     lines: efa.surfaces.map((s) => ({ categoryCode: s.categoryCode, subCategoryCode: s.subCategoryCode, surfaceM2: s.surfaceM2 })),
     referential,
   };
@@ -106,7 +106,7 @@ export async function saveSurfaceLines(rawInput: unknown): Promise<SurfaceLineIn
   }
 
   const referential = await loadReferential();
-  const result = validateSurfaceLines(lines, efa.building.surfaceTotal, referential);
+  const result = validateSurfaceLines(lines, efa.surfaceTotal ?? efa.building.surfaceTotal, referential);
   if (!result.ok) throw new SurfacesError(422, "Les surfaces saisies sont refusées.", result.issues);
 
   await db.$transaction([

@@ -8,7 +8,7 @@ import styles from "@/modules/conformite/Conformite.module.css";
 export const dynamic = "force-dynamic";
 
 /** Bandeau de démonstration : à retirer quand les données et le site seront réels. */
-const DEMO_BANNER = "Données de démonstration fictives. Contexte du site provisoire.";
+const DEMO_BANNER = "Données de consommation fictives. Site de démonstration fictif (Laon).";
 
 const kwh = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 const m2 = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
@@ -114,7 +114,7 @@ function Content({ data }: { data: ConformiteData }) {
         <section className={`${styles.card} ${main.favorable === "CABS" ? styles.cardBest : ""}`} aria-labelledby="cabs-title" data-testid="cabs">
           <h2 id="cabs-title">Objectif en valeur absolue (Cabs)</h2>
           <dl>
-            <dt>Zone · altitude</dt><dd>{cabs.zone} · {cabs.altitudeBand} m (provisoire)</dd>
+            <dt>Zone · altitude</dt><dd data-testid="cabs-zone">{cabs.zone ?? <span className={styles.missing}>inconnue</span>} · {cabs.altitudeBand} m ({data.site.sources.altitude})</dd>
             {cabs.ok ? (
               <>
                 {cabs.perLine.map((l, i) => (
@@ -160,8 +160,30 @@ function Content({ data }: { data: ConformiteData }) {
         </table>
       </div>
 
-      <p className={styles.hint} data-testid="provisional">{data.provisionalContext.note} Correspondances :{" "}
-        {Object.entries(data.provisionalContext.subCategoryToOperat).map(([k, v]) => `${k} → ${v}`).join(", ")}.
+      {data.otherEfas.length > 0 && (
+        <section className={styles.card} aria-labelledby="other-efas-title" data-testid="other-efas">
+          <h2 id="other-efas-title">Autres EFA du site</h2>
+          <p className={styles.hint}>Objectif Cabs seulement. Crelat et verdict : à venir avec le sélecteur d&apos;EFA.</p>
+          <dl>
+            {data.otherEfas.map((e) => (
+              <span key={e.id} style={{ display: "contents" }}>
+                <dt>EFA {e.codes.join(", ") || "sans ligne de surface"} · {m2.format(e.surfaceTotal)} m²</dt>
+                <dd data-testid="other-efa-cabs" data-ok={e.cabs.ok}>
+                  {e.cabs.ok ? <>{fmt(e.cabs.objectiveKwh)} kWh/an</> : (
+                    <span className={styles.missing}>
+                      Cabs non calculable : {e.cabs.message}{e.cabs.code === "SOUS_CATEGORIE_INCONNUE" ? ` ${data.cabsCoverageNote}` : ""}
+                    </span>
+                  )}
+                </dd>
+              </span>
+            ))}
+          </dl>
+        </section>
+      )}
+
+      <p className={styles.hint} data-testid="site">
+        Site : {data.site.postcode} {data.site.city} — zone {data.site.zone ?? "inconnue"} ({data.site.sources.zone}) ; tranche
+        d&apos;altitude {data.site.altitudeBand} m ({data.site.sources.altitude}). Codes d&apos;activité : référentiel OPERAT v9.0.
       </p>
     </>
   );

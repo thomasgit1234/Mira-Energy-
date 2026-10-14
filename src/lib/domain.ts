@@ -31,6 +31,3 @@ export const MIN_YEAR = 2010;
 export function maxYear(now = new Date()): number {
   return now.getFullYear();
 }
-
-// Zone climatique fictive des données de démonstration (voir docs/DECISIONS.md, D5).
-export const DEMO_CLIMATE_ZONE = "DEMO";

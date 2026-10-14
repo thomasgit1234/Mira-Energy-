@@ -22,7 +22,7 @@ describe("6.2 — cabsThreshold (vrai fichier)", () => {
     expect(cabsThreshold(rows, "SCAP1813", "H1a", "<400")).toMatchObject({ ok: false, code: "VALEUR_ABSENTE" });
   });
   it("sous-catégorie inconnue → SOUS_CATEGORIE_INCONNUE", () => {
-    expect(cabsThreshold(rows, "DEMO_RESTAURANT", "H1a", "<400")).toMatchObject({ ok: false, code: "SOUS_CATEGORIE_INCONNUE" });
+    expect(cabsThreshold(rows, "SCAP9999", "H1a", "<400")).toMatchObject({ ok: false, code: "SOUS_CATEGORIE_INCONNUE" });
   });
 });
 
