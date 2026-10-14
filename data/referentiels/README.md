@@ -1,14 +1,31 @@
 # Référentiels
 
-Les fichiers ici sont **fictifs** (zone `DEMO`, codes `DEMO_*`), **sauf les DJU** du dossier `dju/`, réels
-et sourcés (voir plus bas). Ils permettent de faire tourner
-l'appli sans chiffre réglementaire inventé. **Aucune valeur de DJU, de Cabs ou de catégorie OPERAT
-réelle ne doit y figurer tant que la phase 03/04 ne l'a pas sourcée** (arrêté + dossier tutrice).
+Les dossiers `dju/` et `operat/` contiennent des données **réelles et sourcées** (voir plus bas). Toute valeur
+réglementaire (DJU, Cabs, catégorie OPERAT) doit être sourcée ; à défaut, elle est marquée fictive ou « non calculable ».
 
-Les formats de colonnes sont une hypothèse de départ : à confirmer avec la tutrice (tâche 0.3),
-puis à corriger dans `scripts/import-referentiels.ts` si besoin.
+- **categories.csv et zones-climatiques.csv : fictifs, plus lus, supprimés à la branche site-laon.**
 
 Import : `npm run db:import` (idempotent).
+
+## `operat/referentiel_activites_OPERAT_v9.0.csv` — référentiel d'activités RÉEL
+- **Source** : ADEME, « Description Import CSV CONSOMMATIONS » V9.0 du 08/04/2026, onglet 5 (pack Mira du 09/10/2026).
+- **Contenu** : 64 catégories (`CAPxx` / `CAPxxxx`), 491 sous-catégories (`SCAPxxxx` / `SCAPxxxxxx`), ajustement
+  climatique par usage, indicateurs d'intensité d'usage et valeurs étalon. Une ligne par indicateur.
+- **Format** connu uniquement de `src/modules/batiment/operat-activites.ts`.
+- `npm run db:import` l'écrit dans `ReferenceData` (types `CATEGORY` et `SUBCATEGORY`) et supprime les lignes qui n'y
+  figurent plus, sauf celles encore utilisées par une ligne de surface (avertissement).
+- **Mise à jour** : un seul fichier `referentiel_activites_OPERAT_v<X>.csv` dans le dossier ; pour passer en v9.1,
+  remplacer le fichier puis relancer `npm run db:import`.
+
+## `operat/departement_zone_climatique.csv` — zone climatique par département RÉELLE
+- **Source** : pack Mira du 09/10/2026, table dérivée des stations météo du référentiel OPERAT V9.0 (ADEME, onglet 6).
+- **Format** : `departement;zone_climatique;remarque`, connu uniquement de `src/modules/batiment/zone-climatique.ts`.
+- Zone unique par département, sauf l'Hérault (34 : `H2c/H3`, choisir via la station). Corse en 2A / 2B. Pour les DOM
+  (971 à 976), la colonne donne le nom du territoire : la zone est traitée comme « non définie ».
+- Pas importée en base : lue à la demande ; `npm run db:import` se contente de la vérifier.
+
+## `operat/cabs_CAP18_restauration.json` — valeurs absolues Cabs RÉELLES
+Arrêté du 1er août 2025 « valeurs absolues VI », catégorie CAP18 uniquement. Lu par `src/modules/conformite/cabs-source.ts`.
 
 ## `dju/dju_mensuel_2010_2025.csv` — degrés-jours unifiés RÉELS (tâche 4.1)
 - **Source : Météo-France, Licence Ouverte 2.0** — jeu « Données climatologiques de base - quotidiennes »
@@ -29,6 +46,3 @@ Import : `npm run db:import` (idempotent).
   change, c'est la seule fonction à réécrire.
 - Ces DJU servent au **suivi** dans l'application, **pas à la déclaration OPERAT** (OPERAT corrige lui-même le climat
   à partir du code station).
-
-Dans `categories.csv`, la colonne `value` contient du JSON : entourez-la de guillemets et doublez
-ceux de l'intérieur (`"{""a"":1}"`), comme dans le fichier fourni.
