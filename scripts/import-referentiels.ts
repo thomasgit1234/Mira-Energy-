@@ -4,13 +4,15 @@
 //   zones-climatiques.csv : postcode;city;zone
 //   dju/dju_mensuel_2010_2025.csv : DJU mensuels Météo-France par station ; format connu UNIQUEMENT de
 //                                   readDjuFile (src/modules/climat/dju-source.ts), qui les agrège par année
-//   categories.csv        : type;code;label;value   (type = CATEGORY | SUBCATEGORY | CABS_THRESHOLD ; value = JSON)
+//   operat/referentiel_activites_OPERAT_v<X>.csv : référentiel d'activités ADEME (réel) ; format connu UNIQUEMENT de
+//                                   readOperatActivities (src/modules/batiment/operat-activites.ts)
+// categories.csv (fictif) n'est plus lu : il sera supprimé avec le contexte provisoire de la conformité.
 import "dotenv/config";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { parseCsv } from "../src/lib/csv";
 import { createPrismaClient } from "../src/lib/db";
-import { REFERENCE_TYPES } from "../src/lib/domain";
+import { readOperatActivities } from "../src/modules/batiment/operat-activites";
 import { readDjuFile } from "../src/modules/climat/dju-source";
 
 const dir = join(process.cwd(), "data", "referentiels");
@@ -44,19 +46,46 @@ async function main() {
       }
       counts.dju = dju.rows.length;
     }
-    const refs = read("categories.csv");
-    if (refs) {
-      for (const r of refs) {
-        if (!(REFERENCE_TYPES as readonly string[]).includes(r.type)) throw new Error(`categories.csv : type inconnu "${r.type}"`);
-        const value = JSON.parse(r.value || "{}");
-        await db.referenceData.upsert({
-          where: { type_code: { type: r.type, code: r.code } },
-          create: { type: r.type, code: r.code, label: r.label, value },
-          update: { label: r.label, value },
-        });
-      }
-      counts.references = refs.length;
+    // Référentiel d'activités OPERAT → ReferenceData (CATEGORY CAPxx, SUBCATEGORY SCAPxxxx). Le module surfaces
+    // lit value.category ; version, ajustements et indicateurs servent à l'export (phase 08) et au Cabs modulé.
+    const operat = readOperatActivities(join(dir, "operat"));
+    if (operat.issues.length > 0) throw new Error(`Référentiel OPERAT refusé (${operat.fileName}) :\n- ${operat.issues.join("\n- ")}`);
+    const { version } = operat;
+    const rows = [
+      ...operat.categories.map((c) => ({ type: "CATEGORY", code: c.code, label: c.label, value: { version } })),
+      ...operat.subCategories.map((s) => ({
+        type: "SUBCATEGORY", code: s.code, label: s.label,
+        value: { category: s.categoryCode, version, ajustements: s.ajustements, indicateurs: s.indicateurs },
+      })),
+    ];
+    for (const r of rows) {
+      await db.referenceData.upsert({
+        where: { type_code: { type: r.type, code: r.code } },
+        create: r,
+        update: { label: r.label, value: r.value },
+      });
     }
+    // Synchronisation : une ligne absente de la source est supprimée, sauf si une ligne de surface l'utilise encore
+    // (on la garde et on prévient). Les seuils CABS_THRESHOLD n'ont plus de source (Cabs lu par conformite/cabs-source.ts).
+    const sourceKeys = new Set(rows.map((r) => `${r.type}:${r.code}`));
+    const used = await db.surfaceLine.findMany({ select: { categoryCode: true, subCategoryCode: true } });
+    const usedKeys = new Set(used.flatMap((l) => [`CATEGORY:${l.categoryCode}`, `SUBCATEGORY:${l.subCategoryCode}`]));
+    const stale = await db.referenceData.findMany({ where: { type: { in: ["CATEGORY", "SUBCATEGORY", "CABS_THRESHOLD"] } } });
+    let removed = 0;
+    for (const r of stale) {
+      const key = `${r.type}:${r.code}`;
+      if (sourceKeys.has(key)) continue;
+      if (usedKeys.has(key)) {
+        console.warn(`Référentiel OPERAT : ${r.type} ${r.code} absent de la v${version} mais utilisé par une ligne de surface, conservé.`);
+        continue;
+      }
+      await db.referenceData.delete({ where: { id: r.id } });
+      removed++;
+    }
+    counts.categories = operat.categories.length;
+    counts.sousCategories = operat.subCategories.length;
+    counts.referencesSupprimees = removed;
+    console.log(`Référentiel OPERAT v${version} (${operat.fileName}).`);
     console.log("Import terminé :", counts);
     if (Object.keys(counts).length === 0) console.log("Aucun fichier trouvé dans data/referentiels/.");
   } finally {
