@@ -1,5 +1,7 @@
-// API des indicateurs climatiques (tâches 4.1 à 4.3). Lecture seule.
-//   GET /api/climat/indicateurs → { zone, stationLabel, buildingLabel, hasDju, rows: [{ year, consumptionKwh, monthCount, dju, kwhPerDju, status }] }
+// API de la correction climatique (phase 04). Lecture seule.
+//   GET /api/climat/indicateurs → { zone, stationLabel, buildingLabel, activityLabel, surfaceM2, correctionAvailable, problem,
+//     rows: [{ year, consumptionKwh, correctedKwh, correctedKwhPerM2, monthCount, status, correction, correctionProblem, unknownShares,
+//              months: [{ month, rawKwh, correctedKwh }] }] }
 import { NextResponse } from "next/server";
 import { ClimatError, loadClimatIndicators } from "@/modules/climat";
 

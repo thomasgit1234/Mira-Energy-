@@ -8,9 +8,10 @@ import { createPrismaClient } from "../src/lib/db";
 
 const DEMO_EMAIL = process.env.DEV_USER_EMAIL ?? "demo.dupont@example.com";
 const YEAR = new Date().getFullYear() - 1;
-// Station Météo-France de suivi (Aulnois-sous-Laon). Les DJU RÉELS viennent de `npm run db:import`.
+// Station de la correction climatique : Saint-Quentin 02320001, station OPERAT de l'Aisne (D16). Le module climat ne
+// corrige que si le bâtiment porte ce code ; un bâtiment de démo déjà présent est mis à jour (building.update ci-dessous).
 // Provisoire : le champ climateZone porte le code station (voir src/modules/climat/README.md, D16).
-const DJU_STATION = "02037002";
+const CLIMATE_STATION_CODE = "02320001";
 
 /** Site de démonstration : aucune adresse postale réelle, seulement la ville et le code postal (zone H1a). */
 const SITE = { address: "Site de démonstration (fictif)", postcode: "02000", city: "Laon", surfaceTotal: 1700 };
@@ -36,7 +37,7 @@ async function main() {
     const existing = firstEfa
       ? await db.building.findUnique({ where: { id: firstEfa.buildingId } })
       : await db.building.findFirst({ where: { OR: [OLD_SITE, { address: SITE.address, postcode: SITE.postcode }] } });
-    const siteData = { ...SITE, climateZone: DJU_STATION };
+    const siteData = { ...SITE, climateZone: CLIMATE_STATION_CODE };
     const building = existing
       ? await db.building.update({ where: { id: existing.id }, data: { ...siteData, users: { connect: { id: user.id } } } })
       : await db.building.create({ data: { ...siteData, users: { connect: { id: user.id } } } });

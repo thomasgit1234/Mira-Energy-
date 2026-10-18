@@ -1,19 +1,22 @@
 import Link from "next/link";
-import { ClimatError, STATUS_LABELS, loadClimatIndicators, type ClimatIndicators, type YearStatus } from "@/modules/climat";
+import { CORRECTION_LABELS, ClimatError, STATUS_LABELS, loadClimatIndicators, type ClimatIndicators, type YearIndicator } from "@/modules/climat";
 import styles from "@/modules/climat/Climat.module.css";
 
 export const dynamic = "force-dynamic";
 
-const kwhFormat = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
-const djuFormat = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const ratioFormat = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const kwhFormat = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+const perM2Format = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const ENERGY_LABELS: Record<string, string> = { ELECTRICITY: "électricité", GAS: "gaz naturel", PROPANE: "propane" };
 
-const BADGE: Record<YearStatus, string> = {
-  OK: styles.ok,
-  ANNEE_INCOMPLETE: styles.warn,
-  DJU_MANQUANT: styles.bad,
-  PAS_DE_CONSOMMATION: styles.none,
-};
+const kwh = (v: number | null) => (v === null ? "—" : kwhFormat.format(v));
+const perM2 = (v: number | null) => (v === null ? "—" : perM2Format.format(v));
+
+function statusBadge(r: YearIndicator) {
+  if (r.correction === "NON_CORRIGEABLE") return <span className={`${styles.badge} ${styles.bad}`}>{CORRECTION_LABELS.NON_CORRIGEABLE}</span>;
+  if (r.status !== "OK") return <span className={`${styles.badge} ${styles.warn}`}>{STATUS_LABELS[r.status]} ({r.monthCount}/12 mois)</span>;
+  return <span className={`${styles.badge} ${styles.ok}`}>{CORRECTION_LABELS.CORRIGEE}</span>;
+}
 
 export default async function Page() {
   let data: ClimatIndicators | null = null;
@@ -25,50 +28,64 @@ export default async function Page() {
     if (!(e instanceof ClimatError)) console.error(e);
   }
 
-  const hasConsumption = data?.rows.some((r) => r.status !== "PAS_DE_CONSOMMATION") ?? false;
-  const missingDju = data?.rows.filter((r) => r.status === "DJU_MANQUANT").map((r) => r.year) ?? [];
+  const rows = data?.rows ?? [];
+  const notCorrectable = data?.correctionAvailable ? rows.filter((r) => r.correction === "NON_CORRIGEABLE") : [];
+  const unknown = [...new Set(rows.flatMap((r) => r.unknownShares))];
 
   return (
     <main className="page">
       <Link href="/" className="back">← Carte du projet</Link>
-      <p className="eyebrow">Tâches 4.1 à 4.3 · Correction climatique</p>
-      <h1>Consommation rapportée au climat (kWh/DJU)</h1>
-      <p>Pour chaque année : consommation annuelle de l&apos;EFA ÷ degrés-jours unifiés (DJU) de la station météo du bâtiment.
-        Plus l&apos;hiver est froid, plus les DJU sont élevés : le kWh/DJU permet de comparer des années au climat différent.</p>
+      <p className="eyebrow">Phase 04 · Correction climatique</p>
+      <h1>Consommation brute et corrigée du climat</h1>
+      <p>
+        Pour chaque mois : la consommation <strong>brute</strong> (relevée) et la consommation <strong>corrigée</strong>, ramenée à un
+        climat moyen pour comparer des années à l&apos;hiver plus ou moins froid. Indicateur annuel : kWh corrigés par m² de l&apos;EFA.
+      </p>
+      <p className={styles.source} data-testid="source">Correction climatique automatique (station Saint-Quentin).</p>
 
       {problem && <p role="alert" className={styles.error}>{problem}</p>}
 
       {data && (
         <>
-          <p className={styles.building}>{data.buildingLabel}</p>
-          <p className={styles.source} data-testid="source">DJU Météo-France, station {data.stationLabel}, base 18 — Source : Météo-France, Licence Ouverte 2.0.</p>
+          <p className={styles.building}>
+            {data.buildingLabel}{data.activityLabel ? ` — ${data.activityLabel}` : ""}{data.surfaceM2 ? ` — ${kwhFormat.format(data.surfaceM2)} m²` : ""}
+          </p>
 
-          {!data.hasDju && (
-            <p className={styles.notice} role="status">Aucun DJU en base pour la station {data.zone} : lancez <code>npm run db:import</code>, puis rechargez la page.</p>
+          {data.problem && <p className={styles.notice} role="status" data-testid="correction-problem">{data.problem}</p>}
+          {notCorrectable.length > 0 && (
+            <p className={styles.notice} role="status" data-testid="not-correctable">
+              Année non corrigeable : {notCorrectable.map((r) => r.year).join(", ")} (absente du fichier climatique de la station). La consommation brute reste affichée.
+            </p>
           )}
-          {data.hasDju && missingDju.length > 0 && (
-            <p className={styles.notice} role="status">DJU manquant pour {missingDju.join(", ")} : vérifiez le fichier DJU puis lancez <code>npm run db:import</code>.</p>
+          {unknown.length > 0 && (
+            <p className={styles.notice} role="status" data-testid="unknown-shares">
+              Part chauffage inconnue, non corrigée : {unknown.map((e) => ENERGY_LABELS[e] ?? e).join(", ")}{data.activityLabel ? "" : " (activité de l'EFA inconnue)"}.
+              La consommation corrigée de cette énergie est égale à la brute.
+            </p>
           )}
-          {!hasConsumption && (
+          {rows.length === 0 && (
             <p className={styles.notice} role="status" data-testid="no-consumption">
               Aucune consommation enregistrée pour ce bâtiment. Commencez par la <Link href="/collecte">collecte des données</Link>.
             </p>
           )}
 
-          {data.rows.length > 0 && (
+          {rows.length > 0 && (
             <div className={styles.scroll}>
               <table className={styles.table} data-testid="indicators">
                 <thead>
-                  <tr><th>Année</th><th className={styles.num}>Consommation (kWh)</th><th className={styles.num}>DJU</th><th className={styles.num}>kWh/DJU</th><th>Statut</th></tr>
+                  <tr>
+                    <th>Année</th><th className={styles.num}>Brute (kWh)</th><th className={styles.num}>Corrigée (kWh)</th>
+                    <th className={styles.num}>kWh corrigés/m²</th><th>Statut</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {data.rows.map((r) => (
-                    <tr key={r.year} className={r.status === "PAS_DE_CONSOMMATION" ? styles.empty : undefined} data-testid={`year-${r.year}`} data-status={r.status}>
+                  {rows.map((r) => (
+                    <tr key={r.year} data-testid={`year-${r.year}`} data-status={r.status} data-correction={r.correction}>
                       <td>{r.year}</td>
-                      <td className={styles.num}>{r.consumptionKwh === null ? "—" : kwhFormat.format(r.consumptionKwh)}</td>
-                      <td className={styles.num}>{r.dju === null ? "—" : djuFormat.format(r.dju)}</td>
-                      <td className={`${styles.num} ${r.status === "OK" ? styles.strong : ""}`} data-testid="ratio">{r.kwhPerDju === null ? "—" : ratioFormat.format(r.kwhPerDju)}</td>
-                      <td><span className={`${styles.badge} ${BADGE[r.status]}`}>{STATUS_LABELS[r.status]}</span>{r.status === "ANNEE_INCOMPLETE" && <span className={styles.hint}> ({r.monthCount}/12 mois)</span>}</td>
+                      <td className={styles.num}>{kwh(r.consumptionKwh)}</td>
+                      <td className={`${styles.num} ${styles.strong}`} data-testid="corrected">{kwh(r.correctedKwh)}</td>
+                      <td className={styles.num} data-testid="per-m2">{perM2(r.correctedKwhPerM2)}</td>
+                      <td>{statusBadge(r)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -76,9 +93,31 @@ export default async function Page() {
             </div>
           )}
 
+          {rows.length > 0 && <h2 className={styles.subtitle}>Détail par mois</h2>}
+          {[...rows].reverse().map((r, i) => (
+            <details key={r.year} className={styles.details} open={i === 0} data-testid={`months-${r.year}`}>
+              <summary>{r.year} — brute {kwh(r.consumptionKwh)} kWh, corrigée {kwh(r.correctedKwh)} kWh</summary>
+              <div className={styles.scroll}>
+                <table className={styles.table}>
+                  <thead><tr><th>Mois</th><th className={styles.num}>Brute (kWh)</th><th className={styles.num}>Corrigée (kWh)</th></tr></thead>
+                  <tbody>
+                    {r.months.map((m) => (
+                      <tr key={m.month}>
+                        <td>{MONTHS[m.month - 1] ?? m.month}</td>
+                        <td className={styles.num}>{kwh(m.rawKwh)}</td>
+                        <td className={`${styles.num} ${styles.strong}`}>{kwh(m.correctedKwh)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {r.correctionProblem && <p className={styles.hint}>{r.correctionProblem}</p>}
+            </details>
+          ))}
+
           <p className={styles.hint}>
-            Indicateur de suivi calculé sur la consommation totale (toutes énergies) : il est indicatif, la correction climatique rigoureuse
-            porte sur la part chauffage. Les DJU ne servent pas à la déclaration OPERAT, qui corrige elle-même le climat.
+            Seules les parts chauffage et climatisation de chaque énergie sont corrigées (hypothèses Mira Énergie, à confirmer) ; les autres
+            usages restent inchangés. La conformité au décret tertiaire reste calculée sur la consommation brute.
           </p>
         </>
       )}

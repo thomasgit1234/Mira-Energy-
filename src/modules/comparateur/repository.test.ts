@@ -14,11 +14,12 @@ vi.mock("@/lib/db", () => ({ db: { eFA: { findFirst: vi.fn(async () => efa), upd
 vi.mock("@/lib/session", () => ({ getCurrentUser: vi.fn(async () => ({ id: "user-dupont", email: "demo.dupont@example.com", role: "OWNER" })) }));
 
 const ind = (year: number, status: YearIndicator["status"], consumptionKwh: number | null): YearIndicator =>
-  ({ year, status, consumptionKwh, monthCount: 12, dju: 2500, kwhPerDju: consumptionKwh === null ? null : consumptionKwh / 2500 });
+  ({ year, status, consumptionKwh, correctedKwh: consumptionKwh, correctedKwhPerM2: null, monthCount: 12, correction: "CORRIGEE", correctionProblem: null, unknownShares: [], months: [] });
 vi.mock("@/modules/climat", () => ({
   ClimatError: class ClimatError extends Error { status = 500; },
   loadClimatIndicators: vi.fn(async () => ({
-    zone: "02037002", stationLabel: "Aulnois-sous-Laon (02037002)", buildingLabel: "1 rue de la Démo", hasDju: true,
+    zone: "02320001", stationLabel: "Saint-Quentin (02320001)", buildingLabel: "1 rue de la Démo", activityLabel: "Restauration",
+    surfaceM2: 1200, correctionAvailable: true, problem: null,
     rows: [ind(2011, "ANNEE_INCOMPLETE", 32000), ind(2013, "OK", 52800), ind(2019, "OK", 47700), ind(2021, "OK", 94610)],
   })),
 }));

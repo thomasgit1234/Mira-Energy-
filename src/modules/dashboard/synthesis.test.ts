@@ -17,14 +17,20 @@ const SURFACES: SurfacesInput = {
   lines: [{ categoryCode: "CAP18", subCategoryCode: "SCAP1803", surfaceM2: 1200 }],
   referential: REFERENTIAL,
 };
+type ClimatRow = ClimatInput["rows"][number];
+/** Ligne d'année ; corrected = null → année non corrigeable. */
+const row = (year: number, consumptionKwh: number | null, corrected: number | null, status: ClimatRow["status"] = "OK"): ClimatRow => ({
+  year, consumptionKwh, status,
+  correctedKwh: corrected, correctedKwhPerM2: corrected === null ? null : Math.round((corrected / 1200) * 100) / 100,
+  correction: corrected === null ? "NON_CORRIGEABLE" : "CORRIGEE",
+  correctionProblem: corrected === null ? `${year} est absente du fichier climatique de la station : année non corrigeable.` : null,
+  unknownShares: [],
+});
 const CLIMAT: ClimatInput = {
-  hasDju: true,
-  stationLabel: "02037002 — Aulnois-sous-Laon",
-  rows: [
-    { year: 2013, consumptionKwh: 52800, dju: 3000, kwhPerDju: 17.6, status: "OK" },
-    { year: 2019, consumptionKwh: 43200, dju: 2400, kwhPerDju: 18, status: "OK" },
-    { year: 2025, consumptionKwh: 40500, dju: 2500, kwhPerDju: 16.2, status: "OK" },
-  ],
+  stationLabel: "Saint-Quentin (02320001)",
+  correctionAvailable: true,
+  problem: null,
+  rows: [row(2013, 52800, 49500), row(2019, 43200, 44100), row(2025, 40500, 41700)],
 };
 const CABS_OK: CabsResult = { ok: true, objectiveKwh: 278400, surfaceTotal: 1200, perLine: [] };
 
@@ -89,14 +95,18 @@ describe("7.1 — cas nominal (site de Laon, référence 2013)", () => {
     } });
   });
 
-  it("suivi : 2025, 40 500 kWh et son kWh/DJU (année suivie = règle de la conformité)", () => {
-    expect(s.sections.followUp).toEqual({ ok: true, data: { year: 2025, consumptionKwh: 40500, dju: 2500, kwhPerDju: 16.2, stationLabel: "02037002 — Aulnois-sous-Laon" } });
+  it("suivi : 2025, brute 40 500 kWh, corrigée 41 700 kWh, 34,75 kWh corrigés/m² (année suivie = règle de la conformité)", () => {
+    expect(s.sections.followUp).toEqual({ ok: true, data: {
+      year: 2025, consumptionKwh: 40500, correctedKwh: 41700, correctedKwhPerM2: 34.75, unknownShares: [], stationLabel: "Saint-Quentin (02320001)",
+    } });
   });
 
-  it("chaîne : l'étape bâtiment n'a pas de lien, les cinq autres en ont un", () => {
+  it("chaîne : l'étape bâtiment n'a pas de lien, les cinq autres en ont un ; plus d'étape DJU", () => {
     expect(s.steps.map((x) => [x.id, x.href])).toEqual([
-      ["batiment", null], ["surfaces", "/surfaces"], ["consommations", "/collecte"], ["dju", "/climat"], ["reference", "/comparateur"], ["conformite", "/conformite"],
+      ["batiment", null], ["surfaces", "/surfaces"], ["consommations", "/collecte"], ["correction", "/climat"], ["reference", "/comparateur"], ["conformite", "/conformite"],
     ]);
+    expect(s.steps.find((x) => x.id === "correction")?.label).toBe("Correction climatique");
+    expect(JSON.stringify(s)).not.toMatch(/DJU/);
   });
 
   it("méthode retenue : les deux quand Crelat et Cabs sont atteints", () => {
@@ -147,7 +157,7 @@ describe("7.4 — un état vide par cas, avec UNE action", () => {
   });
 
   it("pas de consommation → /collecte ; le suivi est vide", () => {
-    const rows = CLIMAT.rows.map((r) => ({ ...r, consumptionKwh: null, kwhPerDju: null, status: "PAS_DE_CONSOMMATION" as const }));
+    const rows = CLIMAT.rows.map((r) => row(r.year, null, null, "PAS_DE_CONSOMMATION"));
     const s = buildSynthesis(inputs({ climat: { ok: true, data: { ...CLIMAT, rows } }, conformite: { ok: true, data: conformite({ currentKwh: null }) } }));
     expect(codes(s)[0]).toBe("PAS_DE_CONSOMMATION");
     expect(s.nextAction.action.href).toBe("/collecte");
@@ -155,28 +165,44 @@ describe("7.4 — un état vide par cas, avec UNE action", () => {
     expect(stateOf(s, "consommations")).toBe("A_FAIRE");
   });
 
-  it("DJU manquant pour la dernière année → /climat (et npm run db:import)", () => {
-    const rows = [CLIMAT.rows[0], { year: 2025, consumptionKwh: 40500, dju: null, kwhPerDju: null, status: "DJU_MANQUANT" as const }];
+  it("année suivie non corrigeable (absente du fichier climatique) → /climat ; le brut reste affiché, la section ne disparaît pas", () => {
+    const rows = [CLIMAT.rows[0], row(2026, 40500, null)];
     const s = buildSynthesis(inputs({ climat: { ok: true, data: { ...CLIMAT, rows } } }));
-    // 2013 reste une année complète : c'est elle qui est suivie ; aucun manque bloquant.
-    expect(s.sections.followUp).toMatchObject({ ok: true, data: { year: 2013 } });
-    const only = [{ year: 2025, consumptionKwh: 40500, dju: null, kwhPerDju: null, status: "DJU_MANQUANT" as const }];
-    const t = buildSynthesis(inputs({ climat: { ok: true, data: { ...CLIMAT, rows: only } } }));
-    expect(codes(t)).toEqual(["DJU_MANQUANT"]);
-    expect(t.nextAction.action).toEqual({ label: "Voir les DJU", href: "/climat", command: "npm run db:import" });
-    expect(stateOf(t, "dju")).toBe("A_FAIRE");
-    expect(stateOf(t, "consommations")).toBe("FAIT");
+    expect(codes(s)).toEqual(["ANNEE_NON_CORRIGEABLE"]);
+    expect(s.nextAction.action).toEqual({ label: "Voir la correction climatique", href: "/climat" });
+    expect(s.nextAction.reason).toMatch(/Année 2026 non corrigeable/);
+    expect(s.sections.followUp).toEqual({ ok: true, data: {
+      year: 2026, consumptionKwh: 40500, correctedKwh: null, correctedKwhPerM2: null, unknownShares: [], stationLabel: "Saint-Quentin (02320001)",
+    } });
+    expect(stateOf(s, "correction")).toBe("A_FAIRE");
+    expect(stateOf(s, "consommations")).toBe("FAIT");
+    expect(EMPTY_PRIORITY).not.toContain("DJU_MANQUANT");
+  });
+
+  it("autre station / fichier indisponible : la raison du module climat est reprise", () => {
+    const problem = "Le bâtiment est rattaché à la station 02037002, or seule la station Saint-Quentin (02320001) a un fichier de correction climatique.";
+    const rows = CLIMAT.rows.map((r) => ({ ...row(r.year, r.consumptionKwh, null), correctionProblem: problem }));
+    const s = buildSynthesis(inputs({ climat: { ok: true, data: { ...CLIMAT, correctionAvailable: false, problem, rows } } }));
+    expect(codes(s)).toEqual(["ANNEE_NON_CORRIGEABLE"]);
+    expect(s.nextAction.reason).toContain("02037002");
+  });
+
+  it("énergie sans part chauffage connue : transmise à la section de suivi, pas de manque bloquant", () => {
+    const rows = [{ ...row(2025, 40500, 40500), unknownShares: ["GAS"] }];
+    const s = buildSynthesis(inputs({ climat: { ok: true, data: { ...CLIMAT, rows } } }));
+    expect(s.empties).toEqual([]);
+    expect(s.sections.followUp).toMatchObject({ ok: true, data: { unknownShares: ["GAS"], correctedKwh: 40500 } });
   });
 
   it("année incomplète → /collecte", () => {
-    const only = [{ year: 2025, consumptionKwh: 9000, dju: 2500, kwhPerDju: 3.6, status: "ANNEE_INCOMPLETE" as const }];
+    const only = [row(2025, 9000, 9100, "ANNEE_INCOMPLETE")];
     const s = buildSynthesis(inputs({ climat: { ok: true, data: { ...CLIMAT, rows: only } } }));
     expect(codes(s)).toEqual(["ANNEE_INCOMPLETE"]);
     expect(s.nextAction.action.href).toBe("/collecte");
   });
 
   it("seulement 2020 et 2021 → aucune année suivie → /collecte", () => {
-    const only = [2020, 2021].map((year) => ({ year, consumptionKwh: 40000, dju: 2500, kwhPerDju: 16, status: "OK" as const }));
+    const only = [2020, 2021].map((year) => row(year, 40000, 40500));
     const s = buildSynthesis(inputs({ climat: { ok: true, data: { ...CLIMAT, rows: only } } }));
     expect(codes(s)).toEqual(["AUCUNE_ANNEE_SUIVIE"]);
   });
@@ -250,8 +276,8 @@ describe("7.4 — sections indépendantes et priorité de la prochaine action", 
 
   it("l'ordre de priorité suit la chaîne de la démo", () => {
     expect(EMPTY_PRIORITY.indexOf("SURFACES_ABSENTES")).toBeLessThan(EMPTY_PRIORITY.indexOf("PAS_DE_CONSOMMATION"));
-    expect(EMPTY_PRIORITY.indexOf("PAS_DE_CONSOMMATION")).toBeLessThan(EMPTY_PRIORITY.indexOf("DJU_MANQUANT"));
-    expect(EMPTY_PRIORITY.indexOf("DJU_MANQUANT")).toBeLessThan(EMPTY_PRIORITY.indexOf("REFERENCE_NON_CHOISIE"));
+    expect(EMPTY_PRIORITY.indexOf("PAS_DE_CONSOMMATION")).toBeLessThan(EMPTY_PRIORITY.indexOf("ANNEE_NON_CORRIGEABLE"));
+    expect(EMPTY_PRIORITY.indexOf("ANNEE_NON_CORRIGEABLE")).toBeLessThan(EMPTY_PRIORITY.indexOf("REFERENCE_NON_CHOISIE"));
     expect(EMPTY_PRIORITY.indexOf("REFERENCE_NON_CHOISIE")).toBeLessThan(EMPTY_PRIORITY.indexOf("CABS_INDISPONIBLE"));
     expect(EMPTY_PRIORITY[0]).toBe("BASE_INJOIGNABLE");
   });

@@ -16,3 +16,6 @@
 .error { color: #b3261e; }
 .scroll { overflow-x: auto; }
 .hint { color: var(--muted); font-size: .85rem; margin-top: 12px; }
+.subtitle { font-size: 1.05rem; margin: 22px 0 8px; }
+.details { margin: 0 0 10px; }
+.details summary { cursor: pointer; padding: 6px 0; font-variant-numeric: tabular-nums; }
