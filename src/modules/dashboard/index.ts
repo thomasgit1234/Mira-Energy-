@@ -8,5 +8,5 @@ export type {
   Synthesis, DashboardInputs, Source, SourceError, SourceErrorKind, EmptyCode, EmptyState, Action, Section,
   SiteSection, VerdictSection, ObjectivesSection, FollowUpSection, RetainedMethod, Step, StepId, StepState,
 } from "./synthesis";
-export { fmtKwh, fmtKwhYear, fmtM2, fmtKwhPerDju, fmtDju } from "./format";
+export { fmtKwh, fmtKwhYear, fmtM2, fmtKwhPerM2 } from "./format";
 export { loadDashboard } from "./repository";

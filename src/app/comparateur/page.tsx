@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  ComparateurError, DEMO_BANNER, RAW_NOTICE, REFERENCE_PERIOD, SUGGESTED_LABEL, SUGGESTION_HELP, formatKwh, formatRatio, loadComparator,
+  ComparateurError, DEMO_BANNER, RAW_NOTICE, REFERENCE_PERIOD, SUGGESTED_LABEL, SUGGESTION_HELP, formatKwh, loadComparator,
   type ComparatorData,
 } from "@/modules/comparateur";
 import { ReferenceChart } from "@/modules/comparateur/ReferenceChart";
@@ -73,16 +73,16 @@ export default async function Page() {
 
           <div className={styles.scroll}>
             <table className={styles.table} data-testid="comparator-table">
-              <caption>Données du graphique (consommations brutes, kWh d&apos;énergie finale)</caption>
+              <caption>Données du graphique (kWh d&apos;énergie finale, brutes et corrigées du climat)</caption>
               <thead>
-                <tr><th scope="col">Année</th><th scope="col" className={styles.num}>Consommation (kWh)</th><th scope="col" className={styles.num}>kWh/DJU (indicatif)</th><th scope="col">Référence possible ?</th></tr>
+                <tr><th scope="col">Année</th><th scope="col" className={styles.num}>Brute (kWh)</th><th scope="col" className={styles.num}>Corrigée du climat (kWh)</th><th scope="col">Référence possible ?</th></tr>
               </thead>
               <tbody>
                 {period.map((r) => (
                   <tr key={r.year} className={r.eligible ? undefined : styles.muted} data-testid={`row-${r.year}`} data-eligible={r.eligible}>
                     <th scope="row">{r.year}</th>
                     <td className={styles.num}>{formatKwh(r.consumptionKwh)}</td>
-                    <td className={styles.num}>{formatRatio(r.kwhPerDju)}</td>
+                    <td className={styles.num} data-testid="corrected">{formatKwh(r.correctedKwh)}</td>
                     <td>
                       {r.isSuggested && <span className={`${styles.badge} ${styles.badgeSuggested}`}>{SUGGESTED_LABEL}</span>}
                       {data!.chosenYear === r.year && <span className={`${styles.badge} ${styles.badgeChosen}`}>Référence choisie</span>}
@@ -97,7 +97,7 @@ export default async function Page() {
                   <tr key={r.year} className={styles.muted} data-testid={`row-${r.year}`} data-eligible={false}>
                     <th scope="row">{r.year}</th>
                     <td className={styles.num}>{formatKwh(r.consumptionKwh)}</td>
-                    <td className={styles.num}>{formatRatio(r.kwhPerDju)}</td>
+                    <td className={styles.num} data-testid="corrected">{formatKwh(r.correctedKwh)}</td>
                     <td><span className={`${styles.badge} ${styles.badgeNo}`}>non : {r.ineligibleReason}</span></td>
                   </tr>
                 ))}
@@ -105,7 +105,7 @@ export default async function Page() {
             </table>
           </div>
           <p className={styles.hint}>
-            Le kWh/DJU (module climat) est un indicateur indicatif calculé sur la consommation totale ; ce n&apos;est pas une consommation corrigée du climat.
+            Correction climatique automatique (station Saint-Quentin), voir la page <Link href="/climat">correction climatique</Link>. « — » en colonne corrigée : année non corrigeable ou sans consommation.
           </p>
         </>
       )}

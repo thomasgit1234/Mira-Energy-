@@ -2,10 +2,11 @@
 
 **Exigence (à reprendre dans le document A)** — La page de synthèse affiche, pour l'EFA suivie, le verdict 2030 (texte et
 icône), la méthode retenue, l'année de référence et son Créf, les objectifs Crelat 2030 / 2040 / 2050 et Cabs, la
-consommation suivie et son kWh/DJU. Chaque donnée manquante produit un message clair et une action vers la bonne page ;
+consommation suivie brute, sa consommation corrigée du climat et ses kWh corrigés/m² (D10, plus aucun DJU affiché). Chaque donnée manquante produit un message clair et une action vers la bonne page ;
 une source en panne n'empêche pas les autres sections de s'afficher, et la page ne renvoie jamais d'erreur 500.
 
-**Consommations FICTIVES, site de démonstration FICTIF (Laon 02000)** ; DJU, Cabs et référentiel OPERAT réels.
+**Consommations FICTIVES, site de démonstration FICTIF (Laon 02000)** ; données climatiques de la station Saint-Quentin,
+Cabs et référentiel OPERAT réels ; parts chauffage / climatisation = hypothèses Mira Énergie, à confirmer.
 
 ## Pré-requis
 ```
@@ -20,7 +21,7 @@ retenir 2013 dans /comparateur (voir RECETTE-6).
 ## Automatique
 | Vérification | Commande | Attendu |
 |---|---|---|
-| Synthèse, états vides, priorité, erreurs, formats | `npx vitest run src/modules/dashboard` | 34 passés |
+| Synthèse, états vides, priorité, erreurs, formats | `npx vitest run src/modules/dashboard` | 36 passés |
 | Projet complet | `npm run check` | tout vert |
 
 ## Nominal — http://localhost:3000/dashboard
@@ -31,14 +32,14 @@ retenir 2013 dans /comparateur (voir RECETTE-6).
 | 3 | Site et EFA | « Site de démonstration (fictif), 02000 Laon », EFA SASU · propriétaire occupant, **1 200 m²**, zone **H1a**, 2 EFA | ☐ |
 | 4 | Verdict 2030 | **✓ CONFORME** (icône et texte), « Conforme par l'objectif en valeur absolue (Cabs) », méthode retenue et voie la plus favorable : Cabs | ☐ |
 | 5 | Objectifs | référence **2013**, Créf **52 800 kWh**, Crelat **31 680 / 26 400 / 21 120 kWh**, Cabs **278 400 kWh/an** | ☐ |
-| 6 | Consommation suivie | **2025**, **40 500 kWh**, DJU 2 353,7, **17,21 kWh/DJU** (station Aulnois-sous-Laon) | ☐ |
-| 7 | Chaîne | 6 étapes « ✓ Fait » ; « Bâtiment et EFA » sans lien, les 5 autres avec « Ouvrir » | ☐ |
-| 8 | Encadrés | « Données réelles et sourcées » (DJU, Cabs, OPERAT) et « Données fictives » | ☐ |
+| 6 | Consommation suivie | **2025** · Consommation brute **40 500 kWh** · Consommation corrigée **41 651 kWh** · **34,71 kWh/m²** corrigés ; « Correction climatique automatique (station Saint-Quentin) » ; aucun « DJU » | ☐ |
+| 7 | Chaîne | 6 étapes « ✓ Fait » (dont « Correction climatique ») ; « Bâtiment et EFA » sans lien, les 5 autres avec « Ouvrir » | ☐ |
+| 8 | Encadrés | « Données réelles et sourcées » (station Saint-Quentin, Cabs, OPERAT) et « Données fictives » (dont les parts chauffage, hypothèses) | ☐ |
 | 9 | Largeur | 1 280 px : deux colonnes ; mobile (outils de développement, 375 px) : une colonne, pas de défilement horizontal | ☐ |
 
 Contrôle côté serveur : `curl http://localhost:3000/api/dashboard` → `sections.verdict.data.status = "CONFORME"`,
 `sections.objectives.data = { referenceYear: 2013, crefKwh: 52800, crelat: { 2030: 31680, 2040: 26400, 2050: 21120 }, cabsKwh: 278400 }`,
-`sections.followUp.data.consumptionKwh = 40500`, `nextAction.code = null`.
+`sections.followUp.data = { year: 2025, consumptionKwh: 40500, correctedKwh: 41651.33, correctedKwhPerM2: 34.71, … }`, `nextAction.code = null`.
 
 ## États vides — une ligne par cas
 Tous les cas sont prouvés par `src/modules/dashboard/synthesis.test.ts` (aucune modification de base nécessaire). Pour les
@@ -50,7 +51,7 @@ voir à l'écran, **noter la valeur initiale, puis la remettre juste après** ; 
 | Somme des surfaces ≠ surface de l'EFA | `SURFACES_INCOHERENTES` | `SurfaceLine` SCAP1803 : 1 200 → 1 100 | « …inférieure de 100 m² à la surface totale déclarée… » → **Corriger les surfaces** (/surfaces) ; étape Surfaces « À faire » | 1 200 |
 | Aucune ligne de surface | `SURFACES_ABSENTES` | test seulement (supprimer la ligne effacerait une saisie) | → **Renseigner les surfaces** (/surfaces) | — |
 | Pas de consommation | `PAS_DE_CONSOMMATION` | test seulement (base vide) | → **Saisir ou importer les consommations** (/collecte) | — |
-| DJU manquant | `DJU_MANQUANT` | test seulement | → **Voir les DJU** (/climat) + `npm run db:import` | — |
+| Année suivie non corrigeable | `ANNEE_NON_CORRIGEABLE` | `npm run db:studio` → Building → `climateZone` = 02037002 (autre station) | « Année 2025 non corrigeable du climat : … » → **Voir la correction climatique** (/climat) ; brute toujours affichée, corrigée « — » ; verdict inchangé | `npm run db:seed` |
 | Année incomplète / aucune année suivie | `ANNEE_INCOMPLETE`, `AUCUNE_ANNEE_SUIVIE` | test seulement | → /collecte | — |
 | Référence plus éligible | `REFERENCE_INELIGIBLE` | test seulement | raison du comparateur → /comparateur | — |
 | Fichier Cabs introuvable | `CABS_INDISPONIBLE` | test seulement (ne pas renommer le fichier) | → /conformite ; Crelat toujours affiché | — |

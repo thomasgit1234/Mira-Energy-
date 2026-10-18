@@ -11,7 +11,7 @@ Cabs qui ne peut pas être calculé est affiché « non calculable » avec sa ra
 ## Pré-requis
 ```
 npm run db:migrate
-npm run db:import     # référentiel OPERAT, DJU, vérification de la table département → zone
+npm run db:import     # référentiel OPERAT, vérification de la table département → zone et du fichier climatique
 npm run db:seed       # site de Laon : EFA restauration (1 200 m²) puis EFA bureaux (500 m²)
 npm run db:import     # seulement sur une base déjà utilisée : retire les anciennes catégories DEMO
 npm run dev           # si le serveur tournait déjà avant la migration efa_surface_total : l'arrêter et le relancer

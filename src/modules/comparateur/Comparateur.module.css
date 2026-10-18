@@ -37,3 +37,4 @@
 .secondary { background: #fff; color: var(--petrol); border: 1px solid var(--petrol); }
 .primary:disabled, .secondary:disabled { opacity: .55; cursor: not-allowed; }
 .msgOk { color: #1f7a5a; font-weight: 600; }
+.legend { font-size: 12px; fill: #5d6b66; }

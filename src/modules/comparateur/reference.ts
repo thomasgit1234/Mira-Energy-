@@ -4,8 +4,9 @@
 // Règles du cadrage Mira (9 octobre) :
 // - l'année de référence est une année PLEINE de 12 mois, entre 2010 et 2019 inclus ; jamais une moyenne ;
 // - 2020 et 2021 se déclarent sur OPERAT mais sont exclues comme référence et du suivi des objectifs ;
-// - comparaison sur consommations BRUTES (kWh d'énergie finale) ; le kWh/DJU est un indicateur indicatif à côté.
-import type { YearIndicator, YearStatus } from "@/modules/climat";
+// - comparaison et suggestion sur consommations BRUTES (kWh d'énergie finale) ; la consommation corrigée du climat
+//   (module climat) est affichée à côté, pour information (D10, D11).
+import type { CorrectionStatus, YearIndicator, YearStatus } from "@/modules/climat";
 
 export const REFERENCE_PERIOD = { from: 2010, to: 2019 } as const;
 export const EXCLUDED_YEARS: readonly number[] = [2020, 2021];
@@ -13,7 +14,7 @@ export const EXCLUDED_YEARS: readonly number[] = [2020, 2021];
 /** Bandeau de démonstration : supprimer cette constante (ou la mettre à null) quand les données seront réelles. */
 export const DEMO_BANNER: string | null = "Données de démonstration fictives.";
 export const SUGGESTION_HELP = "L'année où vous avez le plus consommé est souvent la plus favorable.";
-export const RAW_NOTICE = "Réduction brute, avant la correction climatique que fait OPERAT.";
+export const RAW_NOTICE = "Le choix se fait sur la consommation brute ; la consommation corrigée du climat est affichée à côté, pour information.";
 export const SUGGESTED_LABEL = "Année la plus consommatrice (suggérée)";
 
 export const INELIGIBLE_REASONS = {
@@ -21,7 +22,6 @@ export const INELIGIBLE_REASONS = {
   OUT_OF_PERIOD: "hors période de référence 2010-2019",
   NO_CONSUMPTION: "pas de consommation",
   INCOMPLETE: "année incomplète",
-  NO_DJU: "DJU manquant",
 } as const;
 
 /** Une année peut-elle servir de référence ? (2010 ≤ année ≤ 2019) */
@@ -34,7 +34,7 @@ type RowLike = Pick<YearIndicator, "year" | "status">;
 /**
  * Ligne éligible = année de la période ET statut « OK » de buildYearIndicators (module climat), c'est-à-dire
  * année complète (chaque énergie présente a ses 12 mois). Le critère n'est pas recodé ici.
- * Hypothèse : une année complète mais sans DJU (statut DJU_MANQUANT) n'est pas éligible.
+ * Une année non corrigeable du climat reste éligible : la référence se choisit sur la consommation brute (D11).
  */
 export function isEligibleRow(row: RowLike): boolean {
   return isReferenceYearEligible(row.year) && row.status === "OK";
@@ -46,14 +46,17 @@ export function ineligibleReason(row: RowLike): string | null {
   if (!isReferenceYearEligible(row.year)) return INELIGIBLE_REASONS.OUT_OF_PERIOD;
   if (row.status === "PAS_DE_CONSOMMATION") return INELIGIBLE_REASONS.NO_CONSUMPTION;
   if (row.status === "ANNEE_INCOMPLETE") return INELIGIBLE_REASONS.INCOMPLETE;
-  if (row.status === "DJU_MANQUANT") return INELIGIBLE_REASONS.NO_DJU;
   return null;
 }
 
 export type ComparatorRow = {
   year: number;
+  /** Consommation brute (kWh). */
   consumptionKwh: number | null;
-  kwhPerDju: number | null;
+  /** Consommation corrigée du climat (kWh) ; null si pas de consommation ou année non corrigeable. */
+  correctedKwh: number | null;
+  /** null si pas de consommation. */
+  correction: CorrectionStatus | null;
   status: YearStatus;
   eligible: boolean;
   ineligibleReason: string | null;
@@ -78,7 +81,8 @@ export function buildComparatorRows(indicators: YearIndicator[], suggestedYear: 
     return {
       year,
       consumptionKwh: r?.consumptionKwh ?? null,
-      kwhPerDju: r?.kwhPerDju ?? null,
+      correctedKwh: r?.correctedKwh ?? null,
+      correction: r?.correction ?? null,
       status: row.status,
       eligible: reason === null,
       ineligibleReason: reason,
@@ -109,9 +113,7 @@ export type ReferenceChoiceCode = "HORS_PERIODE" | "PAS_DE_DONNEES" | "ANNEE_INC
 export type ReferenceChoiceResult = { ok: true } | { ok: false; code: ReferenceChoiceCode; message: string };
 
 /**
- * 5.3 — L'année choisie peut-elle devenir l'année de référence ? Même règle que isEligibleRow, avec un code d'erreur.
- * Hypothèse : une année sans DJU (DJU_MANQUANT) est refusée en PAS_DE_DONNEES (complétude non vérifiable).
- */
+ * 5.3 — L'année choisie peut-elle devenir l'année de référence ? Même règle que isEligibleRow, avec un code d'erreur. */
 export function validateReferenceChoice(year: unknown, rows: RowLike[]): ReferenceChoiceResult {
   if (typeof year !== "number" || !Number.isInteger(year) || !isReferenceYearEligible(year)) {
     const message = typeof year === "number" && EXCLUDED_YEARS.includes(year)
@@ -126,21 +128,12 @@ export function validateReferenceChoice(year: unknown, rows: RowLike[]): Referen
   if (row.status === "ANNEE_INCOMPLETE") {
     return { ok: false, code: "ANNEE_INCOMPLETE", message: `${year} est incomplète : il faut 12 mois pour chaque énergie.` };
   }
-  if (row.status === "DJU_MANQUANT") {
-    return { ok: false, code: "PAS_DE_DONNEES", message: `DJU manquant pour ${year} : lancez npm run db:import.` };
-  }
   return { ok: true };
 }
 
 const kwhFormat = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
-const ratioFormat = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** « 266 500 » (kWh arrondis à l'unité) ; « — » si absent. */
 export function formatKwh(value: number | null): string {
   return value === null || !Number.isFinite(value) ? "—" : kwhFormat.format(value);
-}
-
-/** « 19,19 » ; « — » si absent. */
-export function formatRatio(value: number | null): string {
-  return value === null || !Number.isFinite(value) ? "—" : ratioFormat.format(value);
 }

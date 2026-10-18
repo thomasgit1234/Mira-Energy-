@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  DASHBOARD_BANNER, DATA_ORIGIN, STATE_LABELS, fmtDju, fmtKwh, fmtKwhPerDju, fmtKwhYear, fmtM2, loadDashboard,
+  DASHBOARD_BANNER, DATA_ORIGIN, STATE_LABELS, fmtKwh, fmtKwhPerM2, fmtKwhYear, fmtM2, loadDashboard,
   type EmptyState, type Section, type StepState, type VerdictSection,
 } from "@/modules/dashboard";
 import styles from "@/modules/dashboard/Dashboard.module.css";
@@ -8,6 +8,7 @@ import styles from "@/modules/dashboard/Dashboard.module.css";
 // Tâches 7.1 (synthèse) et 7.4 (états vides). Lecture seule, rendu serveur : loadDashboard ne lève jamais d'erreur.
 export const dynamic = "force-dynamic";
 
+const ENERGY_LABELS: Record<string, string> = { ELECTRICITY: "électricité", GAS: "gaz naturel", PROPANE: "propane" };
 const VERDICT_STYLE: Record<VerdictSection["status"], string> = { CONFORME: styles.ok, NON_CONFORME: styles.ko, INDETERMINE: styles.unknown };
 const STEP_STYLE: Record<StepState, { pill: string; mark: string }> = {
   FAIT: { pill: styles.pillDone, mark: "✓" },
@@ -102,12 +103,17 @@ export default async function Page() {
             <>
               <dl>
                 <dt>Année suivie</dt><dd data-testid="current-year">{d.year}</dd>
-                <dt>Consommation</dt><dd data-testid="current-kwh">{fmtKwh(d.consumptionKwh)}</dd>
-                <dt>DJU de l&apos;année</dt><dd>{fmtDju(d.dju)}</dd>
-                <dt>Rapportée au climat</dt><dd data-testid="kwh-per-dju">{fmtKwhPerDju(d.kwhPerDju)}</dd>
+                <dt>Consommation brute</dt><dd data-testid="current-kwh">{fmtKwh(d.consumptionKwh)}</dd>
+                <dt>Consommation corrigée</dt><dd data-testid="corrected-kwh">{fmtKwh(d.correctedKwh)}</dd>
+                <dt>kWh corrigés/m²</dt><dd data-testid="corrected-per-m2">{fmtKwhPerM2(d.correctedKwhPerM2)}</dd>
               </dl>
-              <p className={styles.hint}>Dernière année complète hors 2020 et 2021. Station : {d.stationLabel ?? "—"}. Consommation brute,
-                avant la correction climatique que fait OPERAT.</p>
+              {d.unknownShares.length > 0 && (
+                <p className={styles.hint} data-testid="unknown-shares">
+                  Part chauffage inconnue, non corrigée : {d.unknownShares.map((e) => ENERGY_LABELS[e] ?? e).join(", ")}.
+                </p>
+              )}
+              <p className={styles.hint}>Dernière année complète hors 2020 et 2021. Correction climatique automatique (station
+                Saint-Quentin). La conformité est calculée sur la consommation brute.</p>
             </>
           )}
         </Card>

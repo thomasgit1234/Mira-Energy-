@@ -1,7 +1,8 @@
 # Référentiels
 
-Les dossiers `dju/` et `operat/` contiennent des données **réelles et sourcées** (voir plus bas). Toute valeur
-réglementaire (DJU, Cabs, catégorie OPERAT) doit être sourcée ; à défaut, elle est marquée fictive ou « non calculable ».
+Les dossiers `climat/` et `operat/` contiennent des données **réelles et sourcées** (voir plus bas). Toute valeur
+réglementaire (données climatiques, Cabs, catégorie OPERAT) doit être sourcée ; à défaut, elle est marquée fictive ou
+« non calculable ».
 
 - Les anciens fichiers fictifs categories.csv et zones-climatiques.csv ont été supprimés (branche site-laon) ; le test
   `scripts/no-demo-codes.test.ts` vérifie qu'aucun code DEMO_* ne revient.
@@ -28,22 +29,13 @@ Import : `npm run db:import` (idempotent).
 ## `operat/cabs_CAP18_restauration.json` — valeurs absolues Cabs RÉELLES
 Arrêté du 1er août 2025 « valeurs absolues VI », catégorie CAP18 uniquement. Lu par `src/modules/conformite/cabs-source.ts`.
 
-## `dju/dju_mensuel_2010_2025.csv` — degrés-jours unifiés RÉELS (tâche 4.1)
-- **Source : Météo-France, Licence Ouverte 2.0** — jeu « Données climatologiques de base - quotidiennes »
-  (data.gouv.fr), fichiers du département 02. Réutilisation libre en citant « Source : Météo-France ».
-- **Calcul** : DJU chauffage, méthode « Météo », base 18 °C : max(0 ; 18 − (TN + TX) / 2) par jour, sommé par mois.
-- **Format** : `code_station;nom_station;annee;mois;DJU_chauffage_base18;DJ_refroid_base18;jours_mesures`,
-  séparateur « ; », virgule décimale, 384 lignes = 2 stations × 192 mois (2010 à 2025).
-- **Stations** :
-
-  | Code | Station | Usage |
-  |---|---|---|
-  | 02037002 | Aulnois-sous-Laon | Station de **suivi** retenue pour la démo (la plus proche de Laon) |
-  | 02320001 | Saint-Quentin | Station du référentiel **OPERAT** pour l'Aisne, gardée pour l'export (phase 08) |
-
-- `npm run db:import` agrège les mois en **DJU annuels** (somme des 12 mois ; une année incomplète est ignorée et
-  signalée) et les écrit dans la table `DjYear` (`climateZone` = code station, voir `src/modules/climat/README.md`).
-- Le format n'est connu que de `parseDjuCsv` / `readDjuFile` (`src/modules/climat/dju-source.ts`) : si le format
-  change, c'est la seule fonction à réécrire.
-- Ces DJU servent au **suivi** dans l'application, **pas à la déclaration OPERAT** (OPERAT corrige lui-même le climat
-  à partir du code station).
+## `climat/coefficients_saint_quentin_02320001.csv` — données climatiques RÉELLES (correction climatique, D10)
+- **Source** : fourni par Mira (méthode OPERAT), station **Saint-Quentin 02320001**, station du référentiel OPERAT pour
+  l'Aisne ; degrés-jours « professionnels de l'énergie », seuil 18 °C, chauffage et climatisation, 2001 à 2025.
+- **Format** : `annee;dju_chauffage;dju_climatisation`, séparateur « ; », point décimal, une ligne par année.
+- Sert **uniquement** au calcul de la correction climatique (référence = moyenne 2001-2020, coefficients bornés entre
+  0,5 et 2) ; ces valeurs ne sont **pas affichées** (consigne de Mira du 17 octobre 2026).
+- Pas importé en base : lu à la demande par le module climat ; `npm run db:import` se contente de le vérifier.
+- Le format n'est connu que de `parseClimateCsv` / `readClimateFile` (`src/modules/climat/coefficients-source.ts`).
+- Les anciens DJU mensuels Météo-France (dossier `dju/`, stations Aulnois-sous-Laon et Saint-Quentin) ont été retirés le
+  18 octobre 2026 ; la table `DjYear` n'est plus alimentée.

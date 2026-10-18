@@ -13,8 +13,8 @@ Comparer les consommations **brutes** 2010–2019, suggérer l'année de référ
   elles sont affichées en lecture seule avec cette raison.
 - **Suggestion** : parmi les années éligibles, l'année la plus **consommatrice**. Aide affichée :
   « L'année où vous avez le plus consommé est souvent la plus favorable. »
-- Comparaison sur consommations **brutes** (kWh d'énergie finale, pas d'eau) : « Réduction brute, avant la correction
-  climatique que fait OPERAT. » Le kWh/DJU est affiché à côté comme indicateur indicatif, **pas** comme consommation corrigée.
+- Comparaison et suggestion sur consommations **brutes** (kWh d'énergie finale, pas d'eau). La consommation **corrigée du
+  climat** (module climat, D10) est affichée à côté : deux barres par année dans l'histogramme, une colonne dans le tableau.
 
 ## Fichiers
 | Fichier | Rôle |
@@ -30,9 +30,9 @@ Comparer les consommations **brutes** 2010–2019, suggérer l'année de référ
 1. **Égalité** de consommation entre deux années éligibles : l'année la plus **ancienne** est suggérée.
 2. **Suggestion = maximum** de la consommation brute annuelle (toutes énergies), jamais une moyenne.
 3. **Année complète** = critère du module climat (statut `OK` de `buildYearIndicators` : chaque énergie présente a ses 12 mois),
-   réutilisé tel quel. Conséquence : une année complète **sans DJU** (statut `DJU_MANQUANT`) n'est pas éligible
-   (refus `PAS_DE_DONNEES`) ; sans effet aujourd'hui, les DJU 2010–2019 existent tous.
-4. **kWh/DJU indicatif** : calculé sur la consommation totale par le module climat.
+   réutilisé tel quel. Une année complète mais **non corrigeable** du climat reste éligible (le choix porte sur la brute).
+4. **Corrigée du climat** : affichée pour information, calculée par le module climat ; elle n'entre ni dans la suggestion
+   ni dans l'éligibilité.
 5. **Une seule EFA** : la première EFA du bâtiment de l'utilisateur (comme le module surfaces). La référence « par EFA »
    viendra avec le site de Laon (plusieurs EFA).
 6. Le bandeau « Données de démonstration fictives. » est la constante `DEMO_BANNER` de `reference.ts` (la mettre à `null` pour le retirer).

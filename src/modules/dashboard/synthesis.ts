@@ -4,8 +4,8 @@
 // - ce que montre chaque section (site, verdict, objectifs, suivi), chacune indépendamment des autres ;
 // - l'état de chaque étape de la chaîne de la démo (fait / à faire / indisponible) ;
 // - la « prochaine action » : le premier manque dans l'ordre de la chaîne.
-// Aucun calcul réglementaire ici : Crelat, Cabs, verdict, kWh/DJU et année suivie viennent des modules
-// (conformite, climat) ; le contrôle des surfaces réutilise validateSurfaceLines (surfaces).
+// Aucun calcul réglementaire ici : Crelat, Cabs, verdict, consommation corrigée du climat et année suivie viennent des
+// modules (conformite, climat) ; le contrôle des surfaces réutilise validateSurfaceLines (surfaces).
 import type { ClimatIndicators } from "@/modules/climat";
 import { EXCLUDED_YEARS, type ComparatorData } from "@/modules/comparateur";
 import { STATUS_LABELS, WAY_LABELS, pickCurrentYear, type ConformiteData, type VerdictStatus } from "@/modules/conformite";
@@ -25,8 +25,11 @@ export type Source<T> = { ok: true; data: T } | SourceError;
 // Formes minimales lues dans chaque source (les types complets des modules y sont assignables).
 export type SiteInput = Pick<UserSite, "postcode" | "city"> & { efas: Pick<UserSite["efas"][number], "id" | "surfaceTotal">[] };
 export type SurfacesInput = Pick<SurfacesContext, "efaId" | "buildingLabel" | "surfaceTotal" | "lines" | "referential">;
-export type ClimatInput = Pick<ClimatIndicators, "hasDju" | "stationLabel"> & {
-  rows: Pick<ClimatIndicators["rows"][number], "year" | "consumptionKwh" | "dju" | "kwhPerDju" | "status">[];
+export type ClimatInput = Pick<ClimatIndicators, "stationLabel" | "correctionAvailable" | "problem"> & {
+  rows: Pick<
+    ClimatIndicators["rows"][number],
+    "year" | "consumptionKwh" | "correctedKwh" | "correctedKwhPerM2" | "status" | "correction" | "correctionProblem" | "unknownShares"
+  >[];
 };
 export type ComparateurInput = Pick<ComparatorData, "efaLabel" | "chosenYear">;
 export type ConformiteInput = Pick<ConformiteData, "reference" | "crelat" | "current"> & {
@@ -54,7 +57,7 @@ export type EmptyCode =
   | "SURFACES_INCOHERENTES"
   | "PAS_DE_CONSOMMATION"
   | "AUCUNE_ANNEE_SUIVIE"
-  | "DJU_MANQUANT"
+  | "ANNEE_NON_CORRIGEABLE"
   | "ANNEE_INCOMPLETE"
   | "REFERENCE_NON_CHOISIE"
   | "REFERENCE_INELIGIBLE"
@@ -68,7 +71,7 @@ export const EMPTY_PRIORITY: readonly EmptyCode[] = [
   "BASE_INJOIGNABLE", "NON_CONNECTE", "PAS_DE_BATIMENT",
   "SURFACES_ABSENTES", "SURFACES_INCOHERENTES",
   "PAS_DE_CONSOMMATION", "AUCUNE_ANNEE_SUIVIE",
-  "DJU_MANQUANT", "ANNEE_INCOMPLETE",
+  "ANNEE_NON_CORRIGEABLE", "ANNEE_INCOMPLETE",
   "REFERENCE_NON_CHOISIE", "REFERENCE_INELIGIBLE",
   "ZONE_INTROUVABLE", "CABS_INDISPONIBLE", "CABS_NON_CALCULABLE",
   "ERREUR",
@@ -136,9 +139,19 @@ export type ObjectivesSection = {
   empties: EmptyState[];
 };
 
-export type FollowUpSection = { year: number; consumptionKwh: number; dju: number | null; kwhPerDju: number | null; stationLabel: string | null };
+export type FollowUpSection = {
+  year: number;
+  /** Consommation brute (celle de la conformité). */
+  consumptionKwh: number;
+  /** Consommation corrigée du climat ; null si l'année n'est pas corrigeable. */
+  correctedKwh: number | null;
+  correctedKwhPerM2: number | null;
+  /** Énergies sans part chauffage connue (corrigée = brute). */
+  unknownShares: string[];
+  stationLabel: string | null;
+};
 
-export type StepId = "batiment" | "surfaces" | "consommations" | "dju" | "reference" | "conformite";
+export type StepId = "batiment" | "surfaces" | "consommations" | "correction" | "reference" | "conformite";
 export type StepState = "FAIT" | "A_FAIRE" | "INDISPONIBLE";
 export type Step = { id: StepId; label: string; state: StepState; detail: string; href: string | null };
 
@@ -155,13 +168,14 @@ export const STATE_LABELS: Record<StepState, string> = { FAIT: "Fait", A_FAIRE: 
 export const DASHBOARD_BANNER = "Données de consommation fictives. Site de démonstration fictif (Laon).";
 export const DATA_ORIGIN = {
   real: [
-    "DJU mensuels Météo-France (stations Aulnois-sous-Laon et Saint-Quentin, Licence Ouverte 2.0)",
+    "Données climatiques annuelles de la station OPERAT Saint-Quentin (02320001), fournies par Mira (correction climatique)",
     "Valeurs Cabs de l'arrêté du 1er août 2025 « valeurs absolues VI » (catégorie CAP18 Restauration)",
     "Référentiel d'activités OPERAT v9.0 et table département → zone climatique (ADEME)",
   ],
   fictive: [
     "Consommations d'électricité et de gaz (répartition mensuelle forfaitaire)",
     "Nom, adresse et propriétaire du site de démonstration (seuls la ville et le code postal sont réels)",
+    "Parts chauffage et climatisation par énergie (hypothèses Mira Énergie, à confirmer)",
   ],
 } as const;
 
@@ -188,8 +202,11 @@ function surfacesEmpty(s: SurfacesInput): EmptyState | null {
   return null;
 }
 
-/** Année suivie (règle du module conformité) et, à défaut, la raison de son absence. */
-function followUpOf(c: ClimatInput): { current: FollowUpSection } | { empty: EmptyState } {
+/**
+ * Année suivie (règle du module conformité, sur la consommation brute) et, à défaut, la raison de son absence.
+ * Si l'année suivie n'est pas corrigeable du climat, la section reste affichée (brut) et un manque est ajouté.
+ */
+function followUpOf(c: ClimatInput): { current: FollowUpSection; correctionEmpty: EmptyState | null } | { empty: EmptyState } {
   const withConsumption = c.rows.filter((r) => r.consumptionKwh !== null);
   if (withConsumption.length === 0) {
     return { empty: empty("PAS_DE_CONSOMMATION", "Aucune consommation enregistrée pour cette EFA.",
@@ -198,17 +215,26 @@ function followUpOf(c: ClimatInput): { current: FollowUpSection } | { empty: Emp
   const current = pickCurrentYear(c.rows);
   if (current) {
     const row = c.rows.find((r) => r.year === current.year);
-    return { current: { ...current, dju: row?.dju ?? null, kwhPerDju: row?.kwhPerDju ?? null, stationLabel: c.stationLabel } };
+    const corrected = row?.correction === "CORRIGEE";
+    const correctionEmpty = corrected ? null : empty("ANNEE_NON_CORRIGEABLE",
+      `Année ${current.year} non corrigeable du climat : ${row?.correctionProblem ?? c.problem ?? "absente du fichier climatique de la station."}`,
+      { label: "Voir la correction climatique", href: "/climat" });
+    return {
+      current: {
+        ...current,
+        correctedKwh: corrected ? row?.correctedKwh ?? null : null,
+        correctedKwhPerM2: corrected ? row?.correctedKwhPerM2 ?? null : null,
+        unknownShares: row?.unknownShares ?? [],
+        stationLabel: c.stationLabel,
+      },
+      correctionEmpty,
+    };
   }
   // Pas d'année suivie : on explique à partir de la dernière année avec consommation (hors 2020 et 2021).
   const last = withConsumption.filter((r) => !EXCLUDED_YEARS.includes(r.year)).sort((a, b) => b.year - a.year)[0];
   if (!last) {
     return { empty: empty("AUCUNE_ANNEE_SUIVIE", "Seules 2020 et 2021 ont des consommations, or elles sont exclues du suivi : ajoutez une autre année.",
       { label: "Ajouter des consommations", href: "/collecte" }) };
-  }
-  if (last.status === "DJU_MANQUANT") {
-    return { empty: empty("DJU_MANQUANT", `DJU manquant pour ${last.year} : importez les DJU de la station du bâtiment.`,
-      { label: "Voir les DJU", href: "/climat", command: "npm run db:import" }) };
   }
   return { empty: empty("ANNEE_INCOMPLETE", `Aucune année complète (12 mois) hors 2020 et 2021 : ${last.year} est incomplète.`,
     { label: "Compléter les consommations", href: "/collecte" }) };
@@ -293,9 +319,11 @@ export function buildSynthesis(inputs: DashboardInputs): Synthesis {
   const surfaceProblem = surfaces.ok ? surfacesEmpty(surfaces.data) : fail(surfaces);
   if (surfaces.ok && surfaceProblem) all.push(surfaceProblem);
 
-  // Consommations, DJU, année suivie.
+  // Consommations, année suivie, correction climatique.
   const follow = climat.ok ? followUpOf(climat.data) : { empty: fail(climat) };
   if (climat.ok && "empty" in follow) all.push(follow.empty);
+  const correctionProblem = "current" in follow ? follow.correctionEmpty : null;
+  if (correctionProblem) all.push(correctionProblem);
   const followUp: Section<FollowUpSection> = "current" in follow ? { ok: true, data: follow.current } : { ok: false, empty: follow.empty };
 
   // Année de référence : la conformité dit si elle est encore éligible ; à défaut, le comparateur dit si elle est choisie.
@@ -346,7 +374,6 @@ export function buildSynthesis(inputs: DashboardInputs): Synthesis {
   // Chaîne de la démo.
   const unavailable = (s: { ok: boolean }) => !s.ok;
   const consumptionCodes: EmptyCode[] = ["PAS_DE_CONSOMMATION", "AUCUNE_ANNEE_SUIVIE", "ANNEE_INCOMPLETE"];
-  const djuCodes: EmptyCode[] = ["DJU_MANQUANT"];
   const followCode = "empty" in follow ? follow.empty.code : null;
   const stepOf = (id: StepId, label: string, href: string | null, isUnavailable: boolean, problem: EmptyState | null, done: string): Step => ({
     id, label, href,
@@ -363,9 +390,9 @@ export function buildSynthesis(inputs: DashboardInputs): Synthesis {
     stepOf("consommations", "Consommations", "/collecte", unavailable(climat),
       followCode && consumptionCodes.includes(followCode) ? followEmpty : null,
       "Au moins une année complète hors 2020 et 2021."),
-    stepOf("dju", "DJU (kWh/DJU)", "/climat", unavailable(climat),
-      followCode && djuCodes.includes(followCode) ? followEmpty : followCode ? { ...followEmpty!, message: "En attente d'une année complète." } : null,
-      "kWh/DJU calculé pour l'année suivie."),
+    stepOf("correction", "Correction climatique", "/climat", unavailable(climat),
+      correctionProblem ?? (followCode ? { ...followEmpty!, message: "En attente d'une année complète." } : null),
+      "Consommation corrigée calculée pour l'année suivie."),
     stepOf("reference", "Année de référence", "/comparateur", !referenceKnown, refProblem,
       chosenYear !== null ? `Année ${chosenYear} retenue.` : ""),
     stepOf("conformite", "Conformité", "/conformite", unavailable(conformite),

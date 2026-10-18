@@ -1,8 +1,8 @@
 # Recette — tâches 5.1 à 5.3 (comparateur d'années, année de référence)
 
-**Exigence (à reprendre dans le document A)** — Le comparateur affiche les consommations brutes 2010–2019 (histogramme +
-tableau équivalent) avec le kWh/DJU indicatif ; il signale les années non éligibles (2020/2021 exclues, hors période,
-incomplètes, sans consommation) ; il suggère l'année éligible la plus consommatrice (égalité : la plus ancienne) ; un choix
+**Exigence (à reprendre dans le document A)** — Le comparateur affiche les consommations brutes ET corrigées du climat
+2010–2019 (histogramme à deux barres par année + tableau équivalent, correction du module climat, D10) ; il signale les années non éligibles (2020/2021 exclues, hors période,
+incomplètes, sans consommation) ; il suggère l'année éligible la plus consommatrice en BRUT (égalité : la plus ancienne ; règle inchangée, D11) ; un choix
 d'année refusé n'écrit rien (HTTP 422) ; un choix valide est enregistré (`EFA.referenceYear`) et peut être changé.
 
 **Données de démonstration FICTIVES** (bandeau affiché sur la page).
@@ -19,27 +19,29 @@ Puis importer l'historique fictif : **http://localhost:3000/collecte/import** �
 ## Automatique
 | Vérification | Commande | Attendu |
 |---|---|---|
-| Comparateur, suggestion, validation et enregistrement du choix (41 tests) | `npx vitest run src/modules/comparateur` | 41 passés |
+| Comparateur, suggestion, validation, brut + corrigé, enregistrement du choix (45 tests) | `npx vitest run src/modules/comparateur` | 45 passés |
 | Projet complet | `npm run check` | tout vert |
 
 ## Manuelle — http://localhost:3000/comparateur
 | # | Action | Résultat attendu | OK ? |
 |---|---|---|---|
 | 1 | Ouvrir la page **avant** l'import | Bandeau « Données de démonstration fictives. » ; 2019 seule éligible, suggérée | ☐ |
-| 2 | Importer le CSV (pré-requis), recharger | Histogramme 2010–2019, kWh au-dessus des barres, kWh/DJU en dessous | ☐ |
+| 2 | Importer le CSV (pré-requis), recharger | Histogramme 2010–2019, deux barres par année : brute (pleine, valeur au-dessus) et corrigée du climat (à points, valeur sous l'année) ; légende ; aucun « DJU » | ☐ |
 | 3 | Lire la suggestion | « Année la plus consommatrice (suggérée) **2013** — 52 800 kWh » + aide « L'année où vous avez le plus consommé… » | ☐ |
 | 4 | Regarder la barre 2013 | Contour pointillé épais + libellé au-dessus (pas seulement la couleur) | ☐ |
 | 5 | Regarder 2011 | Barre hachurée grise, « non éligible » ; tableau : « non : année incomplète » | ☐ |
 | 6 | Regarder 2015 | 48 000 kWh (électricité + gaz), éligible | ☐ |
 | 7 | Tableau, années suivantes | 2020 et 2021 : « 2020 et 2021 : exclues du suivi des objectifs » ; 2022–2025 : « hors période » | ☐ |
-| 8 | Mention sous le titre | « Réduction brute, avant la correction climatique que fait OPERAT. » | ☐ |
+| 8 | Mention sous le titre | « Le choix se fait sur la consommation brute ; la consommation corrigée du climat est affichée à côté, pour information. » | ☐ |
 | 9 | Bloc « Année de référence » | « Aucune année de référence n'est encore choisie » + bouton « Retenir cette année (2013) » ; la liste ne propose que les années éligibles (pas 2011) | ☐ |
 | 10 | Cliquer « Retenir cette année (2013) » | Badge « Référence choisie 2013 » (bloc, tableau) ; barre 2013 au contour plein | ☐ |
 | 11 | Choisir 2017 dans la liste, « Enregistrer ce choix » | Badge « Référence choisie 2017 » ; `npm run db:studio` → `EFA.referenceYear = 2017` | ☐ |
 
-Valeurs attendues (kWh / kWh/DJU, station 02037002) : 2010 46 800 / 15,17 · 2011 32 000 / 13,54 (incomplète) ·
-2012 49 200 / 18,11 · **2013 52 800 / 17,90** · 2014 45 600 / 19,69 · 2015 48 000 / 18,76 · 2016 44 400 / 16,45 ·
-2017 50 400 / 19,88 · 2018 43 200 / 17,62 · 2019 47 700 / 19,19.
+Valeurs attendues (kWh brut / kWh corrigé, station Saint-Quentin 02320001, relevées le 18 octobre 2026) :
+2010 46 800 / 45 011 · 2011 32 000 / 32 764 (incomplète) · 2012 49 200 / 48 793 · **2013 52 800 / 51 532** ·
+2014 45 600 / 47 190 · 2015 48 000 / 48 334 (gaz non corrigé) · 2016 44 400 / 44 200 · 2017 50 400 / 50 759 ·
+2018 43 200 / 43 801 · 2019 47 700 / 48 188. La suggestion reste **2013** (brut le plus élevé ; ici, c'est aussi la
+corrigée la plus élevée, mais la règle porte sur le brut, D11).
 
 ## Contrôle côté serveur (API)
 ```
@@ -57,5 +59,5 @@ Supprimer les années 2010–2018 importées et remettre `EFA.referenceYear` à 
 (⚠️ efface toutes les données locales).
 
 ## Preuves à garder (document B)
-Capture de la page après import (suggestion 2013, 2011 hachurée, 2020/2021 signalées), sortie des tests `src/modules/comparateur`,
+Capture de la page après import (brut + corrigé, suggestion 2013, 2011 hachurée, 2020/2021 signalées), sortie des tests `src/modules/comparateur`,
 et les réponses 422 des appels `curl`.

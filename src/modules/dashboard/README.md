@@ -14,14 +14,14 @@ manquante donne un message clair et **une** action, au lieu d'une page cassée o
 | Fichier | Rôle |
 |---|---|
 | `synthesis.ts` | **Pur.** `buildSynthesis(inputs)` → `{ sections, steps, empties, nextAction }` ; `classifyError` (erreur d'un chargeur → `AUTH` / `NOT_FOUND` / `DB` / `ERROR`) ; constantes du bandeau et de l'encadré réel / fictif. |
-| `format.ts` | **Pur.** Formats français (`fmtKwh`, `fmtKwhYear`, `fmtM2`, `fmtKwhPerDju`, `fmtDju`) : espace fine insécable pour les milliers, virgule décimale. |
+| `format.ts` | **Pur.** Formats français (`fmtKwh`, `fmtKwhYear`, `fmtM2`, `fmtKwhPerM2`) : espace fine insécable pour les milliers, virgule décimale. |
 | `repository.ts` | `loadDashboard()` : appelle les 5 chargeurs avec `Promise.allSettled`, classe leurs erreurs, appelle `buildSynthesis`. Ne lève jamais d'erreur, n'écrit rien. |
 | `Dashboard.module.css` | Une colonne sur mobile, deux à partir de 900 px. |
 | `*.test.ts` | États vides, cas nominal (valeurs de Laon), sections indépendantes, priorité, classement des erreurs, formats. |
 
 ## Sections (7.1)
 Site et EFA · Verdict 2030 (texte + icône ✓ / ✗ / ?, méthode retenue, voie la plus favorable) · Objectifs (année de
-référence, Créf, Crelat 2030 / 2040 / 2050, Cabs) · Consommation suivie et kWh/DJU · Chaîne de la démo (6 étapes, fait /
+référence, Créf, Crelat 2030 / 2040 / 2050, Cabs) · Consommation suivie (brute, corrigée du climat, kWh corrigés/m²) · Chaîne de la démo (6 étapes, fait /
 à faire / indisponible ; l'étape « bâtiment » n'a pas de lien tant que le module est un squelette) · Encadré réel / fictif.
 Hors périmètre : frise (7.2) et comparatif (7.3).
 
@@ -36,7 +36,7 @@ premier manque dans l'ordre de la chaîne (`EMPTY_PRIORITY`) :
 | 3 | `PAS_DE_BATIMENT` | 404 | commande `npm run db:seed` + retour à la carte du projet |
 | 4–5 | `SURFACES_ABSENTES`, `SURFACES_INCOHERENTES` | aucune ligne ; contrôle `validateSurfaceLines` refusé | /surfaces |
 | 6–7 | `PAS_DE_CONSOMMATION`, `AUCUNE_ANNEE_SUIVIE` | aucune consommation ; seulement 2020 / 2021 | /collecte |
-| 8–9 | `DJU_MANQUANT`, `ANNEE_INCOMPLETE` | dernière année sans DJU ; aucune année complète | /climat (+ `npm run db:import`) ; /collecte |
+| 8–9 | `ANNEE_NON_CORRIGEABLE`, `ANNEE_INCOMPLETE` | année suivie absente du fichier climatique (ou autre station) : la brute reste affichée ; aucune année complète | /climat ; /collecte |
 | 10–11 | `REFERENCE_NON_CHOISIE`, `REFERENCE_INELIGIBLE` | `chosenYear` vide ; année plus éligible | /comparateur |
 | 12–14 | `ZONE_INTROUVABLE`, `CABS_INDISPONIBLE`, `CABS_NON_CALCULABLE` | zone non déduite ; fichier Cabs absent ; autre raison | /conformite |
 | 15 | `ERREUR` | toute autre erreur d'une source | retour à la carte du projet |

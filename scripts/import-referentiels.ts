@@ -1,20 +1,20 @@
 // Importe les fichiers de data/referentiels/*.csv en base (idempotent : relancer ne duplique rien).
 //   npm run db:import
 // Sources (voir data/referentiels/README.md) :
-//   dju/dju_mensuel_2010_2025.csv : DJU mensuels Météo-France par station ; format connu UNIQUEMENT de
-//                                   readDjuFile (src/modules/climat/dju-source.ts), qui les agrège par année
+//   climat/coefficients_saint_quentin_02320001.csv : PAS importé en base (lu à la demande par le module climat pour la
+//                                   correction climatique) ; format connu UNIQUEMENT de readClimateFile
+//                                   (src/modules/climat/coefficients-source.ts) ; seulement vérifié ici
 //   operat/referentiel_activites_OPERAT_v<X>.csv : référentiel d'activités ADEME (réel) ; format connu UNIQUEMENT de
 //                                   readOperatActivities (src/modules/batiment/operat-activites.ts)
 //   operat/departement_zone_climatique.csv : PAS importée en base (lue à la demande par
 //                                   src/modules/batiment/zone-climatique.ts) ; seulement vérifiée ici
 // categories.csv et zones-climatiques.csv (fictifs) ne sont plus lus : supprimés à la branche site-laon.
 import "dotenv/config";
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { createPrismaClient } from "../src/lib/db";
 import { readOperatActivities } from "../src/modules/batiment/operat-activites";
 import { DEPARTMENT_ZONES_FILE, readDepartmentZones } from "../src/modules/batiment/zone-climatique";
-import { readDjuFile } from "../src/modules/climat/dju-source";
+import { CLIMATE_FILE, readClimateFile } from "../src/modules/climat/coefficients-source";
 
 const dir = join(process.cwd(), "data", "referentiels");
 
@@ -26,21 +26,11 @@ async function main() {
     const zones = readDepartmentZones(join(process.cwd(), DEPARTMENT_ZONES_FILE));
     if (zones.issues.length > 0) throw new Error(`Table département → zone refusée :\n- ${zones.issues.join("\n- ")}`);
     counts.departements = zones.rows.length;
-    // DJU (tâche 4.1) : le format du fichier n'est connu QUE de readDjuFile. Table DjYear : climateZone = code station.
-    const djuFile = join(dir, "dju", "dju_mensuel_2010_2025.csv");
-    if (existsSync(djuFile)) {
-      const dju = readDjuFile(djuFile);
-      if (dju.errorCount > 0) throw new Error(`Fichier DJU refusé (${djuFile}) :\n- ${dju.issues.join("\n- ")}`);
-      for (const warning of dju.issues) console.warn(`DJU : ${warning}`); // années incomplètes, ignorées
-      for (const d of dju.rows) {
-        await db.djYear.upsert({
-          where: { year_climateZone: { year: d.year, climateZone: d.zone } },
-          create: { year: d.year, climateZone: d.zone, dju: d.dju },
-          update: { dju: d.dju },
-        });
-      }
-      counts.dju = dju.rows.length;
-    }
+    // Fichier de la correction climatique (D10) : vérifié pour signaler tout de suite un fichier abîmé. Il n'est plus
+    // importé en base (la table DjYear du schéma n'est plus alimentée) : le module climat le lit à la demande.
+    const climate = readClimateFile(join(process.cwd(), CLIMATE_FILE));
+    if (climate.issues.length > 0) throw new Error(`Fichier climatique refusé (${CLIMATE_FILE}) :\n- ${climate.issues.join("\n- ")}`);
+    counts.anneesClimat = climate.rows.length;
     // Référentiel d'activités OPERAT → ReferenceData (CATEGORY CAPxx, SUBCATEGORY SCAPxxxx). Le module surfaces
     // lit value.category ; version, ajustements et indicateurs servent à l'export (phase 08) et au Cabs modulé.
     const operat = readOperatActivities(join(dir, "operat"));

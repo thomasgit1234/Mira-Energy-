@@ -1,54 +1,58 @@
-# Module `climat` — Correction climatique (DJU) (Phase 04, tâches 4.1 à 4.3)
+# Module `climat` — Correction climatique (Phase 04)
 
-Pour chaque année : consommation annuelle de l'EFA (kWh) ÷ DJU de l'année et de la station du bâtiment = **kWh/DJU**.
+La correction climatique se fait **en arrière-plan** (consigne de Mira du 17 octobre 2026, décision D10) : l'utilisateur voit
+la consommation **brute** et la consommation **corrigée** (par mois et par an), plus les **kWh corrigés/m²** de l'EFA.
+Aucun DJU ni kWh/DJU n'est affiché.
 
 - **Piste conseillée** : T4 (voir docs/REPARTITION.md)
 - **Page** : `src/app/climat/page.tsx` — **API** : `GET /api/climat/indicateurs` (lecture seule)
-- **Données** : table Prisma `DjYear` (remplie par `npm run db:import`), consommations de l'EFA (`Consumption`, `ConsumptionMonth`)
+- **Données** : fichier `data/referentiels/climat/coefficients_saint_quentin_02320001.csv` (lu à la demande, pas en base),
+  consommations de l'EFA (`Consumption`, `ConsumptionMonth`), lignes de surface (catégorie OPERAT de l'EFA)
 - **Recette** : `docs/RECETTE-4.md`
 
-## Les DJU : réels, Météo-France
-- Fichier : `data/referentiels/dju/dju_mensuel_2010_2025.csv` — **Source : Météo-France, Licence Ouverte 2.0**.
-- DJU chauffage, méthode « Météo », base 18 °C : max(0 ; 18 − (TN + TX) / 2) par jour, sommé par mois.
-- Deux stations, 2010 à 2025 : **02037002 Aulnois-sous-Laon** (station de **suivi**, celle du bâtiment de démo) et
-  **02320001 Saint-Quentin** (station **OPERAT** de l'Aisne, gardée pour l'export, phase 08).
-- Les DJU ne servent **pas** à la déclaration OPERAT (OPERAT corrige lui-même le climat), seulement au suivi dans l'application.
+## Méthode (OPERAT, fournie par Mira)
+- Station **Saint-Quentin 02320001** (station OPERAT de l'Aisne), degrés-jours « professionnels de l'énergie », seuil 18 °C,
+  chauffage et climatisation, 2001 à 2025.
+- **Référence** = moyenne 2001-2020 de la station, **calculée** depuis le fichier (2 791,295 chauffage ; 233,755 clim).
+- **Coefficient** de l'année = référence / valeur de l'année, **borné entre 0,5 et 2** (chauffage et clim séparément).
+- **Corrigée** = brute × part chauffage × coef chauffage + brute × part clim × coef clim + brute × part autres usages.
+- **Mensuel** : chaque mois est corrigé avec le coefficient de son année (le fichier est annuel).
+- Année absente du fichier → **non corrigeable** (corrigée `null`, affichée « — ») ; jamais 0 ni 1 par défaut.
 
 ## Fichiers
 | Fichier | Rôle |
 |---|---|
-| `dju-source.ts` | **4.1** — `parseDjuCsv` / `readDjuFile` : **le seul code qui connaît le format du fichier DJU**. Agrège les mois en DJU annuels. Si le format change, on ne réécrit que ce fichier. |
-| `repository.ts` | **4.1** `loadDjuTable()` (seule lecture des DJU à l'exécution, depuis `DjYear`) ; **4.3** `loadClimatIndicators()` (utilisateur → bâtiment → EFA → consommations, 401 / 404 comme les surfaces). Serveur uniquement. |
-| `indicators.ts` | **4.2** `normalizeZone`, `findDju`, `isValidDju` ; **4.3** `computeKwhPerDju`, `buildYearIndicators`, `STATUS_LABELS`. Fonctions pures. |
-| `stations.ts` | Libellés des stations pour l'affichage. |
-| `*.test.ts` | Tests (dont le contrôle des DJU annuels sur le vrai fichier). |
+| `coefficients-source.ts` | `parseClimateCsv` / `readClimateFile` : **le seul code qui connaît le format du fichier climatique** (D9). |
+| `correction.ts` | **Pur.** `referenceDegreeDays`, `boundedCoefficient`, `yearCoefficients`, `validateShares`, `correctKwh`, `correctYear`, `kwhPerM2`. |
+| `usage-shares.ts` | **Hypothèses Mira Énergie, à confirmer** (D21) : `USAGE_SHARES` (parts chauffage / clim par activité et énergie), `sharesFor`, `efaCategory`. |
+| `indicators.ts` | **Pur.** `buildYearIndicators` : par année, brute, corrigée, corrigée/m², détail mensuel, statuts. |
+| `repository.ts` | `loadClimatIndicators()` (utilisateur → première EFA → consommations, 401 / 404 comme les surfaces), `loadClimateRows()`. Serveur uniquement. |
+| `*.test.ts` | Tests, dont le **test de référence** de la gérante (`correction.test.ts`). |
 
-## Règles de calcul
-- **Agrégation (4.1)** : DJU annuel = somme des 12 mois, arrondie au dixième. Une année n'est produite que si les
-  12 mois sont présents et si `jours_mesures` = nombre réel de jours de chaque mois (bissextiles comprises) ;
-  sinon elle est ignorée et signalée. Doublon station + année + mois, colonne manquante, DJU non numérique ou
-  négatif = erreur bloquante pour `db:import`.
-- **kWh/DJU (4.3)** : arrondi à 2 décimales ; jamais de division par un DJU nul, négatif, non numérique ou NaN.
-- **Statuts**, par priorité : `PAS_DE_CONSOMMATION` → `DJU_MANQUANT` (kWh/DJU non calculé) → `ANNEE_INCOMPLETE`
-  (valeur calculée mais **non comparable**) → `OK`. Les années affichées sont l'union des années avec consommation
-  et des années avec DJU pour la station.
+## Statuts (séparés)
+- **Complétude** (`status`, sur la brute) : `OK` (chaque énergie a ses 12 mois) · `ANNEE_INCOMPLETE` · `PAS_DE_CONSOMMATION`.
+  Utilisé tel quel par le comparateur (éligibilité) et la conformité (année suivie).
+- **Correction** (`correction`) : `CORRIGEE` · `NON_CORRIGEABLE` (année absente du fichier, fichier invalide, ou bâtiment
+  rattaché à une autre station que 02320001), avec la raison dans `correctionProblem`.
+- `unknownShares` : énergies sans part connue, comptées sans correction (« part chauffage inconnue, non corrigée »).
 
-## Hypothèses (à valider avec Mira / la tutrice)
-1. **Consommation annuelle** = somme de tous les mois et de **toutes les énergies** de l'EFA pour l'année.
-2. **Année complète** = chaque énergie présente a ses 12 mois.
-3. Les mois **validés ou non** sont pris tels quels.
-4. Le kWh/DJU est calculé sur la consommation **totale** : c'est un indicateur de suivi, **indicatif**. La correction
-   climatique rigoureuse ne porte que sur la part chauffage (non distinguée aujourd'hui).
-5. **2020 et 2021** sont à déclarer mais exclues comme année de référence et du suivi des objectifs (règle du cadrage
-   Mira) : à appliquer dans les tâches 5 (comparateur), **pas ici** — elles sont affichées normalement.
-6. Le **DJU mensuel** existe dans le fichier mais n'est pas utilisé : une vue mensuelle (évolution future) demanderait
-   une nouvelle table.
+## Parts retenues (D21, hypothèses à confirmer)
+| Activité (catégorie OPERAT) | Énergie | Chauffage | Climatisation |
+|---|---|---|---|
+| Restauration (CAP18) | gaz naturel (`GAS`) | 0 % | 0 % |
+| Restauration (CAP18) | électricité (`ELECTRICITY`) | 25 % | 0 % |
+| Bureaux (CAP04) | propane (`PROPANE`, pas encore dans `src/lib/domain.ts`) | 100 % | 0 % |
+| Bureaux (CAP04) | électricité (`ELECTRICITY`) | 25 % | 0 % |
+
+## Hypothèses
+1. Consommation annuelle = somme de tous les mois et de **toutes les énergies** de l'EFA.
+2. Les mois **validés ou non** sont pris tels quels.
+3. Catégorie de l'EFA = celle de toutes ses lignes de surface ; plusieurs catégories → activité inconnue (rien corrigé).
+4. La conformité reste calculée sur la **brute** (module conformité inchangé).
 
 ## Limite connue : `climateZone` porte le code station
-Le schéma n'a qu'un champ `climateZone` (sur `Building` et `DjYear`). **Provisoirement, il porte le code de la
-station Météo-France** (`02037002` pour le bâtiment de démo). La **zone climatique H1a**, nécessaire pour Cabs
-(tâche 6.2), sera déduite plus tard du département (tâche 1.2). Séparer les deux notions en deux champs demandera
-une **PR schéma dédiée** (label `schema`), hors de cette tâche.
+`Building.climateZone` porte provisoirement le code de la station (`02320001`, D16). La zone climatique H1a se déduit du
+département (tâche 1.2). Séparer les deux notions demandera une **PR schéma dédiée**. La table `DjYear` n'est plus alimentée.
 
 ## Règles
 - Le code métier vit dans `src/modules/climat/` ; ne modifiez pas les autres modules sans PR dédiée.
