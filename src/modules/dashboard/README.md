@@ -22,7 +22,7 @@ manquante donne un message clair et **une** action, au lieu d'une page cassée o
 ## Sections (7.1)
 Site et EFA · Verdict 2030 (texte + icône ✓ / ✗ / ?, méthode retenue, voie la plus favorable) · Objectifs (année de
 référence, Créf, Crelat 2030 / 2040 / 2050, Cabs) · Consommation suivie (brute, corrigée du climat, kWh corrigés/m²) · Chaîne de la démo (6 étapes, fait /
-à faire / indisponible ; l'étape « bâtiment » n'a pas de lien tant que le module est un squelette) · Encadré réel / fictif.
+à faire / indisponible) · Encadré réel / fictif.
 Hors périmètre : frise (7.2) et comparatif (7.3).
 
 ## États vides (7.4)

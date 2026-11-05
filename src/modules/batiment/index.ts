@@ -9,3 +9,10 @@ export { SITE_ALTITUDE_BAND, SITE_ALTITUDE_NOTE, BatimentError, loadUserSite } f
 export type { SiteEfa, UserSite } from "./site";
 export { EFA_COOKIE, efaLabel, efaParam, pickEfaId, safeBackPath } from "./efa-choice";
 export { resolveUserEfaId, userEfaIds } from "./efa-selection";
+// Fiche bâtiment (1.1) et zone climatique (1.2).
+export { RNB_API, RNB_SITE, RNB_STATUS_LABELS, normalizeRnbId, checkRnbId, formatRnbId, parseRnbBuilding, parseRnbAddressSearch, fetchRnbBuilding, searchRnbByAddress } from "./rnb-source";
+export type { RnbAddress, RnbBuilding, RnbError, RnbErrorCode, RnbLookup, RnbSearch } from "./rnb-source";
+export { validateBuildingInput, parseSurface, stationDepartment, zoneForPostcode } from "./building-form";
+export type { BuildingInput, BuildingData, BuildingField, BuildingIssue, BuildingCheck, BuildingContext } from "./building-form";
+export { loadBuildingSheet, saveBuilding, BuildingSaveError } from "./building";
+export type { BuildingSheet } from "./building";

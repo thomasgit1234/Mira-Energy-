@@ -384,8 +384,7 @@ export function buildSynthesis(inputs: DashboardInputs): Synthesis {
   });
   const followEmpty = "empty" in follow ? follow.empty : null;
   const steps: Step[] = [
-    // Pas de lien : le module bâtiment n'est encore qu'un squelette.
-    stepOf("batiment", "Bâtiment et EFA", null, unavailable(site), null,
+    stepOf("batiment", "Bâtiment et EFA", "/batiment", unavailable(site), null,
       site.ok ? `${site.data.postcode} ${site.data.city}, ${site.data.efas.length} EFA.` : ""),
     stepOf("surfaces", "Surfaces", "/surfaces", unavailable(surfaces), surfaces.ok ? surfaceProblem : null,
       surfaces.ok ? `Somme des lignes = surface de l'EFA (${fmtM2(surfaces.data.surfaceTotal)}).` : ""),

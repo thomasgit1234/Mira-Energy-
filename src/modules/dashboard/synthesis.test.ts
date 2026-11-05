@@ -103,7 +103,7 @@ describe("7.1 — cas nominal (site de Laon, référence 2013)", () => {
 
   it("chaîne : l'étape bâtiment n'a pas de lien, les cinq autres en ont un ; plus d'étape DJU", () => {
     expect(s.steps.map((x) => [x.id, x.href])).toEqual([
-      ["batiment", null], ["surfaces", "/surfaces"], ["consommations", "/collecte"], ["correction", "/climat"], ["reference", "/comparateur"], ["conformite", "/conformite"],
+      ["batiment", "/batiment"], ["surfaces", "/surfaces"], ["consommations", "/collecte"], ["correction", "/climat"], ["reference", "/comparateur"], ["conformite", "/conformite"],
     ]);
     expect(s.steps.find((x) => x.id === "correction")?.label).toBe("Correction climatique");
     expect(JSON.stringify(s)).not.toMatch(/DJU/);
