@@ -13,6 +13,7 @@ import { computeCabs, type CabsResult } from "./cabs";
 import { CABS_DECREE, CABS_FILE, readCabsFile, type AltitudeBand, type CabsRow } from "./cabs-source";
 import { computeCrelat, type CrelatResult } from "./crelat";
 import { CABS_COVERAGE_NOTE, cabsForEfas, type EfaCabs } from "./site-efas";
+import { checkCabsSurface } from "./surface-check";
 import { evaluateVerdict, pickCurrentYear, type Verdict } from "./verdict";
 
 export class ConformiteError extends Error {
@@ -119,7 +120,11 @@ export async function loadConformite(): Promise<ConformiteData> {
   // Zone inconnue : aucune valeur Cabs ne peut être lue pour ce site (jamais de zone devinée).
   else if (zone === null) cabs = { ok: false, code: "VALEUR_ABSENTE", message: `zone climatique inconnue : ${zoneResult.ok ? "" : zoneResult.message}` };
   else {
-    cabs = computeCabs(cabsRows.rows, surfaces.lines.map((l) => ({ code: l.subCategoryCode, surfaceM2: l.surfaceM2 })), zone, band);
+    // Somme des lignes ≠ surface de l'EFA → Cabs non calculable (jamais un objectif calculé sur une surface fausse).
+    cabs = checkCabsSurface(
+      computeCabs(cabsRows.rows, surfaces.lines.map((l) => ({ code: l.subCategoryCode, surfaceM2: l.surfaceM2 })), zone, band),
+      surfaces.surfaceTotal,
+    );
     otherEfas = cabsForEfas(cabsRows.rows, userSite.efas.filter((e) => e.id !== surfaces.efaId), zone, band);
   }
 

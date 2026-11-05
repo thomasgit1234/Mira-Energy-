@@ -2,6 +2,7 @@
 // Le verdict complet (Crelat + Cabs) ne porte que sur la première EFA tant que le sélecteur d'EFA n'existe pas (D18).
 import { computeCabs, type CabsResult } from "./cabs";
 import type { AltitudeBand, CabsRow } from "./cabs-source";
+import { checkCabsSurface } from "./surface-check";
 
 /** Le fichier Cabs fourni ne couvre qu'une catégorie : à rappeler à côté d'un code absent (D13). */
 export const CABS_COVERAGE_NOTE = "Le fichier Cabs ne couvre que la catégorie CAP18 (Restauration - Débit de boissons).";
@@ -15,6 +16,6 @@ export function cabsForEfas(rows: CabsRow[], efas: EfaCabsInput[], zone: string,
     id: e.id,
     surfaceTotal: e.surfaceTotal,
     codes: [...new Set(e.lines.map((l) => l.subCategoryCode))],
-    cabs: computeCabs(rows, e.lines.map((l) => ({ code: l.subCategoryCode, surfaceM2: l.surfaceM2 })), zone, band),
+    cabs: checkCabsSurface(computeCabs(rows, e.lines.map((l) => ({ code: l.subCategoryCode, surfaceM2: l.surfaceM2 })), zone, band), e.surfaceTotal),
   }));
 }

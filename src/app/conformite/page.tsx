@@ -88,7 +88,10 @@ function Content({ data }: { data: ConformiteData }) {
       {!cabs.ok && cabs.code === "SURFACE_MANQUANTE" && (
         <p className={styles.notice} role="status">Objectif Cabs non calculable : renseignez la <Link href="/surfaces">décomposition des surfaces</Link>.</p>
       )}
-      {!cabs.ok && cabs.code !== "SURFACE_MANQUANTE" && <p className={styles.notice} role="status" data-testid="cabs-problem">Objectif Cabs non calculable : {cabs.message}</p>}
+      {!cabs.ok && cabs.code === "SURFACES_INCOHERENTES" && (
+        <p className={styles.notice} role="status" data-testid="cabs-surfaces">Objectif Cabs non calculable : {cabs.message} <Link href="/surfaces">Corriger les surfaces</Link></p>
+      )}
+      {!cabs.ok && cabs.code !== "SURFACE_MANQUANTE" && cabs.code !== "SURFACES_INCOHERENTES" && <p className={styles.notice} role="status" data-testid="cabs-problem">Objectif Cabs non calculable : {cabs.message}</p>}
 
       <div className={styles.columns}>
         <section className={`${styles.card} ${main.favorable === "CRELAT" ? styles.cardBest : ""}`} aria-labelledby="crelat-title" data-testid="crelat">
