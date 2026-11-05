@@ -10,7 +10,11 @@ export type EfaRole = (typeof EFA_ROLES)[number];
 export const ENTITY_TYPES = ["SASU", "SCI", "COLLECTIVITE", "PARTICULAR"] as const;
 export type EntityType = (typeof ENTITY_TYPES)[number];
 
-export const ENERGY_TYPES = ["ELECTRICITY", "GAS"] as const;
+// Énergies collectées, toujours en kWh d'énergie finale (jamais en m³, kg ou litres : la conversion est celle de la facture).
+//  ELECTRICITY  électricité (PRM, gestionnaire de réseau Enedis)
+//  GAS          gaz naturel (PCE, gestionnaire de réseau GRDF)
+//  PROPANE      propane en citerne (pas de réseau : factures de livraison du fournisseur) — bureaux du site de démo (D21)
+export const ENERGY_TYPES = ["ELECTRICITY", "GAS", "PROPANE"] as const;
 export type EnergyType = (typeof ENERGY_TYPES)[number];
 
 // Origine d'une donnée de consommation = les 5 modes de collecte (phase 02).

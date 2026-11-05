@@ -21,6 +21,11 @@ Les 5 modes de collecte des consommations (PDF, saisie, email, export, API simul
 - [ ] Import export espace client Enedis/GRDF (2.4)
 - [ ] API ACD simulée (2.5)
 
+## Énergies
+Électricité, gaz naturel et propane (`ENERGY_TYPES`, `src/lib/domain.ts`), toujours en **kWh d'énergie finale** : pour le propane,
+les kWh de la facture de livraison (aucune conversion kg ou litres → kWh dans l'application). Import CSV : colonne énergie
+« électricité », « gaz », « propane » ou « GPL ».
+
 ## Règles
 - Le code métier vit dans `src/modules/collecte/` ; ne modifiez pas les autres modules sans PR dédiée.
 - Pour changer le schéma de base : PR séparée, label `schema` (voir docs/CONVENTIONS.md).

@@ -7,11 +7,8 @@
 import type { EnergyType } from "@/lib/domain";
 import type { UsageShares } from "./correction";
 
-/**
- * Énergies de la table. "PROPANE" n'existe pas encore dans ENERGY_TYPES (src/lib/domain.ts) : à y ajouter par une
- * PR dédiée quand la collecte saura l'enregistrer. D'ici là, la part du propane ne sert qu'aux tests.
- */
-export type ShareEnergy = EnergyType | "PROPANE";
+/** Énergies de la table : celles de la collecte (src/lib/domain.ts), propane compris. */
+export type ShareEnergy = EnergyType;
 
 /** Activité = catégorie OPERAT de l'EFA (référentiel v9.0). */
 export const ACTIVITY_LABELS: Record<string, string> = {

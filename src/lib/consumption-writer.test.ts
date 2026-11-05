@@ -38,6 +38,12 @@ describe("saveConsumptionSchema", () => {
     expect(saveConsumptionSchema.parse(base).validated).toBe(false);
   });
 
+  it("accepte les trois énergies du domaine : électricité, gaz, propane", () => {
+    for (const energyType of ["ELECTRICITY", "GAS", "PROPANE"]) {
+      expect(saveConsumptionSchema.safeParse({ ...base, energyType }).success).toBe(true);
+    }
+  });
+
   it.each([
     ["mois 13", { ...base, months: [{ month: 13, kwh: 10 }] }],
     ["kWh négatif", { ...base, months: [{ month: 1, kwh: -1 }] }],

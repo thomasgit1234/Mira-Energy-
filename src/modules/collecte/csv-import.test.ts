@@ -56,6 +56,8 @@ describe("parseMonth / parseEnergy", () => {
     expect(parseEnergy("Électricité")).toBe("ELECTRICITY");
     expect(parseEnergy("ELEC")).toBe("ELECTRICITY");
     expect(parseEnergy("gaz naturel")).toBe("GAS");
+    expect(parseEnergy("Propane")).toBe("PROPANE");
+    expect(parseEnergy("GPL")).toBe("PROPANE");
     expect(parseEnergy("fioul")).toBeNull();
   });
 });

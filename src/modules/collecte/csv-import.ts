@@ -77,6 +77,7 @@ export function parseConsumptionCsv(text: string): ParsedFile {
 const ENERGY_ALIASES: Record<string, EnergyType> = {
   electricity: "ELECTRICITY", electricite: "ELECTRICITY", elec: "ELECTRICITY", electrique: "ELECTRICITY",
   gas: "GAS", gaz: "GAS", gaznaturel: "GAS",
+  propane: "PROPANE", gpl: "PROPANE",
 };
 
 export function parseEnergy(text: string): EnergyType | null {
@@ -125,7 +126,7 @@ export function validateImportRows(rows: RawRow[], now = new Date()): ImportChec
     const month = parseMonth(r.month);
     if (month === null) issues.push({ field: "month", message: `Mois « ${r.month.trim()} » invalide (1 à 12 ou « janvier »…).` });
     const energyType = parseEnergy(r.energy);
-    if (energyType === null) issues.push({ field: "energy", message: `Énergie « ${r.energy.trim()} » inconnue (électricité ou gaz).` });
+    if (energyType === null) issues.push({ field: "energy", message: `Énergie « ${r.energy.trim()} » inconnue (électricité, gaz ou propane).` });
     const kwh = parseKwh(r.kwh);
     if (kwh === null) issues.push({ field: "kwh", message: "Consommation manquante." });
     else if (Number.isNaN(kwh)) issues.push({ field: "kwh", message: `« ${r.kwh.trim()} » n'est pas un nombre de kWh.` });
