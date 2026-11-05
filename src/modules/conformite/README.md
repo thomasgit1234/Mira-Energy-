@@ -16,6 +16,8 @@ Méthode relative (Crelat), méthode absolue (Cabs) et verdict aux jalons 2030 /
   CVC (zone climatique ET tranche d'altitude) + USE étalon. Source : **arrêté du 1er août 2025 dit « valeurs absolues VI »**
   (constantes `CABS_DECREE` / `CABS_SOURCE`). Contrôles : SCAP1803 H1a < 400 m = 99 + 133 = **232** (× 1 200 m² = **278 400**) ;
   SCAP1801 = 57 + 50 = **107**.
+- **Surfaces cohérentes** : si la somme des lignes ≠ surface de l'EFA (au centième de m²), le Cabs est **non calculable**
+  (`SURFACES_INCOHERENTES`, `surface-check.ts`) avec un lien vers /surfaces : jamais d'objectif calculé sur une surface fausse.
 - **Suivi** : consommation de la dernière année **complète** hors 2020 et 2021. Tout est en consommation **brute**, avant la
   correction climatique que fait OPERAT (écrit sur la page). Vocabulaire : EFA, PRM (électricité), PCE (gaz). Pas d'eau.
 
@@ -26,6 +28,7 @@ Méthode relative (Crelat), méthode absolue (Cabs) et verdict aux jalons 2030 /
 | `cabs-source.ts` | 6.2 — `parseCabsJson` / `readCabsFile` : **seul code qui connaît le format du fichier Cabs**. |
 | `cabs.ts` | 6.2 — `cabsThreshold`, `computeCabs` (purs ; erreurs `SOUS_CATEGORIE_INCONNUE`, `VALEUR_ABSENTE`, `SURFACE_MANQUANTE`, `FICHIER_INDISPONIBLE`). |
 | `verdict.ts` | 6.3 — `pickCurrentYear`, `evaluateVerdict` (purs). |
+| `surface-check.ts` | `checkCabsSurface` (pur) : Cabs non calculable si somme des lignes ≠ surface de l'EFA. |
 | `site-efas.ts` | `cabsForEfas` (pur) : Cabs des autres EFA du site, pour l'encadré « Autres EFA du site ». |
 | `repository.ts` | `loadConformite()` : assemble le tout, lecture seule (contexte du site : voir plus bas). |
 

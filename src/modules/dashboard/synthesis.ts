@@ -252,7 +252,7 @@ function referenceEmpty(chosenYear: number | null, problem: string | null): Empt
 }
 
 function cabsEmpty(c: ConformiteInput): EmptyState | null {
-  if (c.cabs.ok || c.cabs.code === "SURFACE_MANQUANTE") return null; // surfaces : déjà signalées par leur propre état
+  if (c.cabs.ok || c.cabs.code === "SURFACE_MANQUANTE" || c.cabs.code === "SURFACES_INCOHERENTES") return null; // surfaces : déjà signalées par leur propre état
   if (c.cabs.code === "FICHIER_INDISPONIBLE") {
     return empty("CABS_INDISPONIBLE", `Fichier des valeurs Cabs introuvable ou invalide : ${c.cabs.message}`,
       { label: "Voir le détail de la conformité", href: "/conformite" });

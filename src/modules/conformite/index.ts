@@ -12,4 +12,5 @@ export type { Verdict, MilestoneVerdict, MethodOutcome, VerdictStatus, Favorable
 export { loadConformite, ConformiteError } from "./repository";
 export type { ConformiteData, SiteContext } from "./repository";
 export { CABS_COVERAGE_NOTE, cabsForEfas } from "./site-efas";
+export { checkCabsSurface } from "./surface-check";
 export type { EfaCabsInput, EfaCabs } from "./site-efas";

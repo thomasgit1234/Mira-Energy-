@@ -63,10 +63,11 @@ voir à l'écran, **noter la valeur initiale, puis la remettre juste après** ; 
 Vérification faite le 14 octobre 2026 sur la base locale : les deux premières lignes, puis requête de contrôle
 (`referenceYear` = 2013, ligne SCAP1803 = 1 200 m², EFA bureaux 500 m² / SCAP0401 500 m², inchangée).
 
-## Point relevé pour le module conformité
-Avec une somme de lignes incohérente (1 100 m² pour une EFA de 1 200 m²), la conformité calcule le Cabs sur la somme des
-lignes (232 × 1 100 = 255 200) sans signaler l'écart. Le dashboard l'indique (`SURFACES_INCOHERENTES`), mais la page
-/conformite ne le fait pas : à discuter (refuser le Cabs, ou l'afficher avec un avertissement).
+## Point relevé pour le module conformité (corrigé le 5 novembre 2026)
+Avec une somme de lignes incohérente (1 100 m² pour une EFA de 1 200 m²), la conformité calculait le Cabs sur la somme des
+lignes (232 × 1 100 = 255 200) sans signaler l'écart. Désormais (`surface-check.ts`), le Cabs est non calculable
+(`SURFACES_INCOHERENTES`), la page /conformite affiche l'écart avec un lien « Corriger les surfaces », et le verdict ne
+s'appuie plus que sur Crelat (INDÉTERMINÉ si Crelat n'est pas calculable).
 
 ## Preuves à garder (document B)
 Sortie de `npx vitest run src/modules/dashboard`, capture de la page nominale (1 280 px et mobile), captures des deux états
