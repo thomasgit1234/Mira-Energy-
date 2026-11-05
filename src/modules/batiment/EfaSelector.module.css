@@ -1,0 +1,7 @@
+.selector { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0.5rem 0 1rem; }
+.label { font-weight: 600; }
+.option { padding: 0.3rem 0.7rem; border: 1px solid #b8c4bd; border-radius: 999px; text-decoration: none; color: inherit; }
+.option:hover { border-color: #1f5c45; }
+.current { background: #1f5c45; border-color: #1f5c45; color: #fff; font-weight: 600; }
+.user { margin: 0.25rem 0 0; font-size: .85rem; color: #5d6b66; }
+.user a { color: #1f5c45; }

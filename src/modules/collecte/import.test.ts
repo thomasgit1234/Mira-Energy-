@@ -11,7 +11,10 @@ const calls: SaveConsumptionInput[] = [];
 
 vi.mock("@/lib/db", () => ({
   db: {
+    // Règle d'accès 9.3 (module bâtiment) : M. Dupont, propriétaire, voit l'EFA de son bâtiment.
+    user: { findUnique: vi.fn(async () => ({ id: "user-dupont", role: "OWNER" })) },
     eFA: {
+      findMany: vi.fn(async () => [{ id: "efa-dupont", building: { users: [{ id: "user-dupont" }] }, occupants: [] }]),
       findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
         where.id === "efa-dupont" ? { id: "efa-dupont", building: { users: [{ id: "user-dupont" }] } } : null,
       ),

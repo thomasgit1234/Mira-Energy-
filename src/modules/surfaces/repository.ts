@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { resolveUserEfaId, userCanAccessEfa } from "@/modules/batiment";
 import {
   validateSurfaceLines,
   type Referential,
@@ -60,19 +61,18 @@ async function loadReferential(): Promise<Referential> {
   return { categories, subCategories };
 }
 
-/** EFA de l'utilisateur courant (1.3 : première EFA de son premier bâtiment). */
-async function findUserEfa(userId: string) {
-  return db.eFA.findFirst({
-    where: { building: { users: { some: { id: userId } } } },
-    include: { building: true, surfaces: { orderBy: { surfaceM2: "desc" } } },
-    orderBy: { id: "asc" },
-  });
+/** EFA choisie de l'utilisateur (efaId, sinon sélecteur d'EFA, sinon la première). */
+async function findUserEfa(userId: string, efaId?: string) {
+  const id = await resolveUserEfaId(userId, efaId);
+  if (!id) return null;
+  return db.eFA.findUnique({ where: { id }, include: { building: true, surfaces: { orderBy: { surfaceM2: "desc" } } } });
 }
 
-export async function loadSurfacesContext(): Promise<SurfacesContext> {
+export async function loadSurfacesContext(efaId?: string): Promise<SurfacesContext> {
   const user = await getCurrentUser();
   if (!user) throw new SurfacesError(401, "Aucun utilisateur connecté (lancez `npm run demo` pour créer le compte de démonstration).");
-  const efa = await findUserEfa(user.id);
+  const efa = await findUserEfa(user.id, efaId);
+  if (!efa && efaId) throw new SurfacesError(404, "EFA introuvable.");
   if (!efa) throw new SurfacesError(404, "Aucun bâtiment rattaché à cet utilisateur (lancez `npm run db:seed`).");
   const referential = await loadReferential();
   if (referential.categories.length === 0) {
@@ -99,11 +99,9 @@ export async function saveSurfaceLines(rawInput: unknown): Promise<SurfaceLineIn
   const user = await getCurrentUser();
   if (!user) throw new SurfacesError(401, "Aucun utilisateur connecté.");
 
-  const efa = await db.eFA.findUnique({ where: { id: efaId }, include: { building: { include: { users: { select: { id: true } } } } } });
-  // Cloisonnement (9.3) : on ne distingue pas « inexistante » et « pas la vôtre ».
-  if (!efa || !efa.building.users.some((u) => u.id === user.id)) {
-    throw new SurfacesError(404, "EFA introuvable.");
-  }
+  // Cloisonnement (9.3, règle unique D22) : on ne distingue pas « inexistante » et « pas la vôtre ».
+  const efa = (await userCanAccessEfa(user.id, efaId)) ? await db.eFA.findUnique({ where: { id: efaId }, include: { building: true } }) : null;
+  if (!efa) throw new SurfacesError(404, "EFA introuvable.");
 
   const referential = await loadReferential();
   const result = validateSurfaceLines(lines, efa.surfaceTotal ?? efa.building.surfaceTotal, referential);

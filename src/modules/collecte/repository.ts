@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { resolveUserEfaId, userCanAccessEfa } from "@/modules/batiment";
 import { saveConsumption, type SkippedMonth } from "@/lib/consumption-writer";
 import { MIN_YEAR, maxYear, type EnergyType } from "@/lib/domain";
 import { isEnergyType, validateManualEntry, type EntryIssue } from "./manual";
@@ -55,14 +56,13 @@ export type SaveReport = {
   skipped: SkippedMonth[];
 };
 
-async function requireUserEfa() {
+/** EFA choisie de l'utilisateur courant (efaId, sinon sélecteur d'EFA, sinon la première). */
+async function requireUserEfa(efaId?: string) {
   const user = await getCurrentUser();
   if (!user) throw new CollecteError(401, "Aucun utilisateur connecté (lancez `npm run demo` pour créer le compte de démonstration).");
-  const efa = await db.eFA.findFirst({
-    where: { building: { users: { some: { id: user.id } } } },
-    include: { building: true },
-    orderBy: { id: "asc" },
-  });
+  const id = await resolveUserEfaId(user.id, efaId);
+  if (!id && efaId) throw new CollecteError(404, "EFA introuvable.");
+  const efa = id === null ? null : await db.eFA.findUnique({ where: { id }, include: { building: true } });
   if (!efa) throw new CollecteError(404, "Aucun bâtiment rattaché à cet utilisateur (lancez `npm run db:seed`).");
   return { user, efa };
 }
@@ -71,13 +71,12 @@ async function requireUserEfa() {
 export async function assertEfaOwnedByCurrentUser(efaId: string): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new CollecteError(401, "Aucun utilisateur connecté.");
-  const efa = await db.eFA.findUnique({ where: { id: efaId }, include: { building: { include: { users: { select: { id: true } } } } } });
-  // On ne distingue pas « inexistante » et « pas la vôtre ».
-  if (!efa || !efa.building.users.some((u) => u.id === user.id)) throw new CollecteError(404, "EFA introuvable.");
+  // Règle unique du cloisonnement (D22) ; on ne distingue pas « inexistante » et « pas la vôtre ».
+  if (!(await userCanAccessEfa(user.id, efaId))) throw new CollecteError(404, "EFA introuvable.");
 }
 
-export async function loadCollecteContext(): Promise<CollecteContext> {
-  const { efa } = await requireUserEfa();
+export async function loadCollecteContext(efaId?: string): Promise<CollecteContext> {
+  const { efa } = await requireUserEfa(efaId);
   const consumptions = await db.consumption.findMany({
     where: { efaId: efa.id },
     include: { months: { select: { kwh: true, validated: true, source: true } } },
@@ -101,10 +100,10 @@ export async function loadCollecteContext(): Promise<CollecteContext> {
   };
 }
 
-export async function loadYear(year: number, energyType: string): Promise<YearState> {
+export async function loadYear(year: number, energyType: string, efaId?: string): Promise<YearState> {
   if (!Number.isInteger(year) || year < MIN_YEAR || year > maxYear()) throw new CollecteError(400, "Année invalide.");
   if (!isEnergyType(energyType)) throw new CollecteError(400, "Énergie invalide.");
-  const { efa } = await requireUserEfa();
+  const { efa } = await requireUserEfa(efaId);
   const consumption = await db.consumption.findUnique({
     where: { efaId_year_energyType: { efaId: efa.id, year, energyType } },
     include: { months: true },

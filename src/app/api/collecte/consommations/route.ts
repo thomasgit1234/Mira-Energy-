@@ -1,7 +1,9 @@
 // API de la saisie manuelle (tâche 2.2).
 //   GET /api/collecte/consommations                       → données déjà collectées (contexte)
 //   GET /api/collecte/consommations?year=2023&energy=GAS  → les 12 mois d'une année / énergie
+//   &efa=<id> facultatif : EFA explicite ; sinon EFA du sélecteur (cookie)
 //   PUT /api/collecte/consommations → { efaId, year, energyType, months: string[12], validated }
+import { efaParam } from "@/modules/batiment";
 import { NextResponse } from "next/server";
 import { CollecteError, loadCollecteContext, loadYear, saveManualEntry } from "@/modules/collecte";
 
@@ -20,8 +22,9 @@ export async function GET(request: Request) {
     const params = new URL(request.url).searchParams;
     const year = params.get("year");
     const energy = params.get("energy");
-    if (year === null && energy === null) return NextResponse.json(await loadCollecteContext());
-    return NextResponse.json(await loadYear(Number(year), energy ?? ""));
+    const efaId = efaParam(params.get("efa")); // sans paramètre : EFA du sélecteur (cookie)
+    if (year === null && energy === null) return NextResponse.json(await loadCollecteContext(efaId));
+    return NextResponse.json(await loadYear(Number(year), energy ?? "", efaId));
   } catch (e) {
     return fail(e);
   }

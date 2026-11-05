@@ -33,7 +33,7 @@ retenir 2013 dans /comparateur (voir RECETTE-6).
 | 4 | Verdict 2030 | **✓ CONFORME** (icône et texte), « Conforme par l'objectif en valeur absolue (Cabs) », méthode retenue et voie la plus favorable : Cabs | ☐ |
 | 5 | Objectifs | référence **2013**, Créf **52 800 kWh**, Crelat **31 680 / 26 400 / 21 120 kWh**, Cabs **278 400 kWh/an** | ☐ |
 | 6 | Consommation suivie | **2025** · Consommation brute **40 500 kWh** · Consommation corrigée **41 651 kWh** · **34,71 kWh/m²** corrigés ; « Correction climatique automatique (station Saint-Quentin) » ; aucun « DJU » | ☐ |
-| 7 | Chaîne | 6 étapes « ✓ Fait » (dont « Correction climatique ») ; « Bâtiment et EFA » sans lien, les 5 autres avec « Ouvrir » | ☐ |
+| 7 | Chaîne | 6 étapes « ✓ Fait » (dont « Correction climatique ») ; les 6 avec « Ouvrir » (« Bâtiment et EFA » → /batiment) | ☐ |
 | 8 | Encadrés | « Données réelles et sourcées » (station Saint-Quentin, Cabs, OPERAT) et « Données fictives » (dont les parts chauffage, hypothèses) | ☐ |
 | 9 | Largeur | 1 280 px : deux colonnes ; mobile (outils de développement, 375 px) : une colonne, pas de défilement horizontal | ☐ |
 

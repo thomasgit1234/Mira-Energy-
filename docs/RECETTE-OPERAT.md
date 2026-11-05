@@ -44,7 +44,7 @@ npm run dev           # si le serveur tournait déjà avant la migration efa_sur
 | 9 | /conformite, encadré « Autres EFA du site » | « EFA SCAP0401 · 500 m² — Cabs non calculable : Sous-catégorie SCAP0401 absente du référentiel Cabs. Le fichier Cabs ne couvre que la catégorie CAP18… », **aucun chiffre** | ☐ |
 | 10 | Avec `consommations-demo-2010-2018.csv` importé et la référence 2013 (voir RECETTE-6) | Créf 52 800 → 31 680 / 26 400 / 21 120 ; suivi 2025 = 40 500 ; **✓ CONFORME** par Cabs | ☐ |
 
-## Gérer plusieurs EFA (hors de cette branche)
+## Gérer plusieurs EFA (fait le 5 novembre 2026, voir « Sélecteur d'EFA » ci-dessous ; points 4 et 5 : Cabs CAP04 toujours manquant)
 Aujourd'hui, toutes les pages travaillent sur la **première EFA** du bâtiment (tri par id, D18) ; l'encadré « Autres EFA du
 site » ne donne que leur Cabs. Pour un vrai traitement multi-EFA, il faudrait :
 1. un **sélecteur d'EFA** commun aux pages (paramètre d'URL `?efa=<id>`), avec l'EFA choisie mémorisée ;
@@ -59,3 +59,18 @@ Les étapes 1 à 9 n'écrivent rien de plus que le seed. L'étape 10 : voir « R
 
 ## Preuves à garder (documents B et C)
 Sortie de `npm run check`, sortie des deux `db:import` (comptes identiques), captures des étapes 5, 7 et 9.
+
+## Sélecteur d'EFA (D18, 5 novembre 2026)
+Prérequis : `npm run db:seed` (deux EFA), serveur `npm run dev` **relancé** après `npx prisma generate` (sinon la surface affichée
+est celle du bâtiment, 1 700 m², au lieu de celle de l'EFA).
+
+| # | Action | Attendu |
+|---|---|---|
+| 1 | Ouvrir /conformite sans cookie | Sélecteur « EFA : » avec deux options ; la restauration (1 200 m²) est en surbrillance ; Cabs 278 400 kWh/an |
+| 2 | Cliquer sur l'EFA bureaux | Retour sur /conformite ; bureaux en surbrillance (500 m²) ; Cabs non calculable (SCAP0401 absente du fichier CAP18) ; verdict INDÉTERMINÉ ; la restauration passe dans « Autres EFA du site » |
+| 3 | Ouvrir /collecte, /climat, /comparateur, /dashboard | Toujours les bureaux (cookie) : aucune consommation, état vide « Saisir ou importer les consommations » |
+| 4 | `curl localhost:3000/api/conformite?efa=pas-a-moi` | 404 « EFA introuvable. » |
+| 5 | `curl -i "localhost:3000/api/efa?id=<id>&back=https://exemple.org"` | 303 vers /dashboard (jamais vers un autre site) |
+| 6 | Revenir à la restauration avec le sélecteur | Valeurs de la démo inchangées (CONFORME par Cabs si la référence 2013 est choisie) |
+
+Preuves automatiques : `npx vitest run src/modules/batiment/efa-choice.test.ts` (règle de choix, retour sûr, libellés).

@@ -1,3 +1,5 @@
+import { efaParam } from "@/modules/batiment";
+import { EfaSelector } from "@/modules/batiment/EfaSelector";
 import Link from "next/link";
 import { RAW_NOTICE } from "@/modules/comparateur";
 import {
@@ -27,11 +29,14 @@ function Met({ o }: { o: MethodOutcome }) {
   return o.met ? <span className={`${styles.pill} ${styles.pillOk}`}>✓ atteint</span> : <span className={`${styles.pill} ${styles.pillKo}`}>✗ non atteint</span>;
 }
 
-export default async function Page() {
+type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function Page({ searchParams }: PageProps) {
+  const efaId = efaParam((await searchParams).efa); // ?efa= explicite, sinon EFA du sélecteur
   let data: ConformiteData | null = null;
   let problem: string | null = null;
   try {
-    data = await loadConformite();
+    data = await loadConformite(efaId);
   } catch (e) {
     problem = e instanceof ConformiteError ? e.message : "Impossible de joindre la base de données : lancez `npm run db:up`, puis rechargez la page.";
     if (!(e instanceof ConformiteError)) console.error(e);
@@ -42,6 +47,7 @@ export default async function Page() {
       <Link href="/" className="back">← Carte du projet</Link>
       <p className="eyebrow">Tâches 6.1 à 6.3 · Conformité au décret tertiaire</p>
       <h1>Conformité de l&apos;EFA</h1>
+      <EfaSelector back="/conformite" efaId={efaId} />
       <p className={styles.banner} role="note" data-testid="demo-banner">{DEMO_BANNER}</p>
       <p>L&apos;EFA est <strong>conforme si au moins une</strong> des deux méthodes est satisfaite : l&apos;objectif relatif (Crelat) ou
         l&apos;objectif en valeur absolue (Cabs). Le décret permet de retenir la plus favorable.</p>
