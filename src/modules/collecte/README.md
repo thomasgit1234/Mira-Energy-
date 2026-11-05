@@ -17,7 +17,7 @@ Les 5 modes de collecte des consommations (PDF, saisie, email, export, API simul
 ## À faire dans ce module
 - [x] Import de fichier CSV avec relecture (2.1) — voir `docs/RECETTE-2.1.md` (PDF : prévu)
 - [x] Saisie manuelle (2.2) — voir `docs/RECETTE-2.2.md`
-- [ ] Modèle d'email de demande d'historique (2.3)
+- [x] Modèle d'email de demande d'historique (2.3) — formulaire, génération du message, copie et ouverture dans la messagerie
 - [ ] Import export espace client Enedis/GRDF (2.4)
 - [ ] API ACD simulée (2.5)
 
