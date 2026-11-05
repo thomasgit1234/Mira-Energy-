@@ -15,10 +15,10 @@ function toSource<T>(r: PromiseSettledResult<T>): Source<T> {
   return error;
 }
 
-/** Synthèse de la première EFA de l'utilisateur. Ne lève jamais d'erreur. */
-export async function loadDashboard(): Promise<Synthesis> {
+/** Synthèse de l'EFA choisie (efaId, sinon sélecteur d'EFA, sinon la première). Ne lève jamais d'erreur. */
+export async function loadDashboard(efaId?: string): Promise<Synthesis> {
   const [site, surfaces, climat, comparateur, conformite] = await Promise.allSettled([
-    loadUserSite(), loadSurfacesContext(), loadClimatIndicators(), loadComparator(), loadConformite(),
+    loadUserSite(efaId), loadSurfacesContext(efaId), loadClimatIndicators(efaId), loadComparator(efaId), loadConformite(efaId),
   ]);
   return buildSynthesis({
     site: toSource(site),

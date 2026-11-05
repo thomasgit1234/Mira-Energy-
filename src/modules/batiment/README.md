@@ -3,7 +3,8 @@
 Identifier le bâtiment, son EFA et son propriétaire (adresse, RNB/BDNB, zone climatique).
 
 - **Piste conseillée** : T1 (voir docs/REPARTITION.md)
-- **Page** : `src/app/batiment/page.tsx` (placeholder à remplacer)
+- **Page** : `src/app/batiment/page.tsx` (fiche bâtiment, tâches 1.1 et 1.2) — **API** : `/api/batiment`, `/api/batiment/rnb`
+- **Recette** : `docs/RECETTE-1.1.md`
 - **Contrat de données** : Prisma : Building, EFA, User
 
 ## Référentiel d'activités OPERAT (fait)
@@ -34,7 +35,9 @@ Identifier le bâtiment, son EFA et son propriétaire (adresse, RNB/BDNB, zone c
   `CODE_POSTAL_INVALIDE`, `CORSE_AMBIGUE`, `DEPARTEMENT_ABSENT`, `ZONE_NON_DEFINIE` (DOM : le fichier donne le nom du
   territoire, pas de zone), `PLUSIEURS_ZONES` (Hérault 34 : H2c/H3, choisir via la station).
 - `npm run db:import` vérifie la table et refuse un fichier abîmé.
-- Reste à faire : brancher sur le formulaire bâtiment (tâche 1.1) et la tranche d'altitude (IGN, D15).
+- Règles pures dans `zone-rules.ts` (sans accès disque, utilisables par le formulaire) ; `zone-climatique.ts` garde le format
+  du fichier et ré-exporte ces règles (aucun import à changer).
+- Branchée sur la fiche bâtiment (1.1) : la zone se recalcule à chaque frappe du code postal. Reste : tranche d'altitude (IGN, D15).
 
 ## Site de l'utilisateur (`site.ts`)
 - `loadUserSite()` (serveur) : bâtiment de la première EFA de l'utilisateur, son code postal et toutes ses EFA (triées par id,
@@ -44,10 +47,22 @@ Identifier le bâtiment, son EFA et son propriétaire (adresse, RNB/BDNB, zone c
 - Site de démonstration (seed) : « Site de démonstration (fictif) », Laon 02000, sans adresse postale réelle ; EFA
   restauration (SCAP1803, 1 200 m², toujours la première) et EFA bureaux (SCAP0401, 500 m², id `<restauration>-bureaux`).
 
-## À faire dans ce module
-- [ ] Formulaire bâtiment + EFA
-- [ ] Recherche d'adresse / identifiant RNB (tâche 1.1)
-- [ ] Rattachement utilisateur ↔ bâtiment
+## Sélecteur d'EFA (`efa-choice.ts`, `efa-selection.ts`, `EfaSelector.tsx`)
+- Règle unique, pure et testée : `pickEfaId(EFA de l'utilisateur, demandée, mémorisée)` → demandée (ou null → 404), sinon cookie, sinon la première.
+- `resolveUserEfaId(userId, efaId?)` : utilisé par surfaces, collecte, climat, comparateur, conformité et `loadUserSite`.
+- `GET /api/efa?id=…&back=/page` pose le cookie `mira-efa` et revient sur la page (retour limité aux pages internes : `safeBackPath`).
+- `<EfaSelector back="/page" efaId={…} />` : composant serveur affiché sous le titre de chaque page ; libellé `efaLabel` (activité OPERAT · surface · rôle).
+
+## Fiche bâtiment (tâche 1.1, fait)
+| Fichier | Rôle |
+|---|---|
+| `rnb-source.ts` | **Lecteur unique de l'API RNB** (https://rnb-api.beta.gouv.fr/api/alpha, sans clé) : `checkRnbId` (12 caractères, tirets tolérés), `parseRnbBuilding`, `parseRnbAddressSearch` (pures) ; `fetchRnbBuilding` (vérifier un ID), `searchRnbByAddress` (bâtiments à une adresse, géocodée par la BAN). Délai 6 s ; panne → `RNB_INJOIGNABLE` (démo hors ligne : saisie manuelle). |
+| `building-form.ts` | **Pur.** `validateBuildingInput` (adresse, code postal 5 chiffres, ville, ID-RNB facultatif, surface > 0 et ≥ somme des surfaces propres des EFA) ; avertissement si la station climatique n'est pas dans le département du code postal ; `zoneForPostcode` (1.2). |
+| `building.ts` | `loadBuildingSheet(efaId?)`, `saveBuilding(body)` : bâtiment de l'EFA choisie, ID-RNB unique (409), ne modifie ni les EFA ni la station. |
+| `BuildingForm.tsx` | Formulaire client : contrôle en direct (même fonction que le serveur), zone recalculée, boutons « Vérifier » et « Chercher par l'adresse ». |
+
+Hors périmètre : modification de la station climatique (D16) et de la tranche d'altitude (D15) ; création d'EFA (seed) ;
+rattachement utilisateur ↔ bâtiment (seed ; cloisonnement : tâche 9.3).
 
 ## Règles
 - Le code métier vit dans `src/modules/batiment/` ; ne modifiez pas les autres modules sans PR dédiée.

@@ -1,3 +1,5 @@
+import { efaParam } from "@/modules/batiment";
+import { EfaSelector } from "@/modules/batiment/EfaSelector";
 import Link from "next/link";
 import { CORRECTION_LABELS, ClimatError, STATUS_LABELS, loadClimatIndicators, type ClimatIndicators, type YearIndicator } from "@/modules/climat";
 import styles from "@/modules/climat/Climat.module.css";
@@ -18,11 +20,14 @@ function statusBadge(r: YearIndicator) {
   return <span className={`${styles.badge} ${styles.ok}`}>{CORRECTION_LABELS.CORRIGEE}</span>;
 }
 
-export default async function Page() {
+type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function Page({ searchParams }: PageProps) {
+  const efaId = efaParam((await searchParams).efa); // ?efa= explicite, sinon EFA du sélecteur
   let data: ClimatIndicators | null = null;
   let problem: string | null = null;
   try {
-    data = await loadClimatIndicators();
+    data = await loadClimatIndicators(efaId);
   } catch (e) {
     problem = e instanceof ClimatError ? e.message : "Impossible de joindre la base de données : lancez `npm run db:up`, puis rechargez la page.";
     if (!(e instanceof ClimatError)) console.error(e);
@@ -37,6 +42,7 @@ export default async function Page() {
       <Link href="/" className="back">← Carte du projet</Link>
       <p className="eyebrow">Phase 04 · Correction climatique</p>
       <h1>Consommation brute et corrigée du climat</h1>
+      <EfaSelector back="/climat" efaId={efaId} />
       <p>
         Pour chaque mois : la consommation <strong>brute</strong> (relevée) et la consommation <strong>corrigée</strong>, ramenée à un
         climat moyen pour comparer des années à l&apos;hiver plus ou moins froid. Indicateur annuel : kWh corrigés par m² de l&apos;EFA.

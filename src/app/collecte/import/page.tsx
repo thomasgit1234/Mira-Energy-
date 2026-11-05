@@ -1,14 +1,19 @@
+import { efaParam } from "@/modules/batiment";
+import { EfaSelector } from "@/modules/batiment/EfaSelector";
 import Link from "next/link";
 import { ImportForm } from "@/modules/collecte/ImportForm";
 import { CollecteError, loadCollecteContext, type CollecteContext } from "@/modules/collecte";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page() {
+type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function Page({ searchParams }: PageProps) {
+  const efaId = efaParam((await searchParams).efa); // ?efa= explicite, sinon EFA du sélecteur
   let context: CollecteContext | null = null;
   let problem: string | null = null;
   try {
-    context = await loadCollecteContext();
+    context = await loadCollecteContext(efaId);
   } catch (e) {
     problem = e instanceof CollecteError ? e.message : "Impossible de joindre la base de données : lancez `npm run db:up`, puis rechargez la page.";
     if (!(e instanceof CollecteError)) console.error(e);
@@ -19,6 +24,7 @@ export default async function Page() {
       <Link href="/collecte" className="back">← Collecte des données</Link>
       <p className="eyebrow">Tâche 2.1 · Collecte, mode 1</p>
       <h1>Import d&apos;un fichier</h1>
+      <EfaSelector back="/collecte/import" efaId={efaId} />
       <p>Importez un fichier CSV de consommations mensuelles (exporté depuis Excel), relisez et corrigez les valeurs, puis enregistrez-les.</p>
       {context ? (
         <>

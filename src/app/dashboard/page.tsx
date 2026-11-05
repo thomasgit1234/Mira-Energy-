@@ -1,3 +1,5 @@
+import { efaParam } from "@/modules/batiment";
+import { EfaSelector } from "@/modules/batiment/EfaSelector";
 import Link from "next/link";
 import {
   DASHBOARD_BANNER, DATA_ORIGIN, STATE_LABELS, fmtKwh, fmtKwhPerM2, fmtKwhYear, fmtM2, loadDashboard,
@@ -36,8 +38,11 @@ function Card<T>({ title, id, section, className, children }: { title: string; i
   );
 }
 
-export default async function Page() {
-  const s = await loadDashboard();
+type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function Page({ searchParams }: PageProps) {
+  const efaId = efaParam((await searchParams).efa); // ?efa= explicite, sinon EFA du sélecteur
+  const s = await loadDashboard(efaId);
   const { site, verdict, objectives, followUp } = s.sections;
   const next = s.nextAction;
 
@@ -46,6 +51,7 @@ export default async function Page() {
       <Link href="/" className="back">← Carte du projet</Link>
       <p className="eyebrow">Tâches 7.1 et 7.4 · Tableau de bord</p>
       <h1>Synthèse de l&apos;EFA</h1>
+      <EfaSelector back="/dashboard" efaId={efaId} />
       <p className={styles.banner} role="note" data-testid="demo-banner">{DASHBOARD_BANNER}</p>
 
       <section className={`${styles.next} ${next.code === null ? styles.nextDone : ""}`} aria-labelledby="next-title" data-testid="next-action" data-code={next.code ?? "AUCUN"}>
