@@ -69,6 +69,12 @@ describe("validateManualEntry", () => {
     expect(validateManualEntry({ year: 2026, energyType: "GAS", months }, NOW).ok).toBe(true);
   });
 
+  it("accepte le propane (bureaux du site de démo, citerne), en kWh", () => {
+    const r = validateManualEntry({ year: 2023, energyType: "PROPANE", months: twelve(() => "6052,25") }, NOW);
+    expect(r.ok).toBe(true);
+    expect(r.months).toHaveLength(12);
+  });
+
   it("refuse une énergie inconnue", () => {
     const r = validateManualEntry({ year: 2023, energyType: "FIOUL", months: twelve(() => "1") }, NOW);
     expect(codes(r)).toEqual(["INVALID_ENERGY"]);

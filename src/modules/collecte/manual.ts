@@ -9,7 +9,7 @@ export const MONTH_LABELS = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ] as const;
 
-export const ENERGY_LABELS: Record<EnergyType, string> = { ELECTRICITY: "Électricité", GAS: "Gaz" };
+export const ENERGY_LABELS: Record<EnergyType, string> = { ELECTRICITY: "Électricité", GAS: "Gaz", PROPANE: "Propane" };
 
 /** Libellés affichés des sources (codes de src/lib/domain.ts). « PDF » = mode 1, import de fichier (PDF ou CSV/Excel). */
 export const SOURCE_LABELS: Record<string, string> = {
@@ -62,7 +62,7 @@ export function validateManualEntry(input: ManualEntryInput, now = new Date()): 
     issues.push({ code: "INVALID_YEAR", message: `L'année doit être comprise entre ${MIN_YEAR} et ${last}.` });
   }
   if (!isEnergyType(input.energyType)) {
-    issues.push({ code: "INVALID_ENERGY", message: "Choisissez une énergie (électricité ou gaz)." });
+    issues.push({ code: "INVALID_ENERGY", message: "Choisissez une énergie (électricité, gaz ou propane)." });
   }
   if (input.months.length !== 12) {
     issues.push({ code: "WRONG_MONTH_COUNT", message: "La saisie doit comporter exactement 12 mois." });
