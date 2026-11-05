@@ -40,7 +40,8 @@ export function ManualEntryForm({ minYear, maxYear, initial }: Props) {
     setMessage(null);
     setServerIssues([]);
     try {
-      const res = await fetch(`/api/collecte/consommations?year=${year}&energy=${energyType}`);
+      // EFA explicite : on reste sur l'EFA du formulaire même si le sélecteur a changé dans un autre onglet.
+      const res = await fetch(`/api/collecte/consommations?year=${year}&energy=${energyType}&efa=${encodeURIComponent(state.efaId)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Chargement impossible.");
       setState(data);

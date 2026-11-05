@@ -10,7 +10,16 @@ const update = vi.fn(async ({ data }: { data: { referenceYear: number } }) => {
   return efa;
 });
 
-vi.mock("@/lib/db", () => ({ db: { eFA: { findFirst: vi.fn(async () => efa), update: (args: never) => update(args) } } }));
+// L'utilisateur de démo n'a qu'une EFA : findMany (choix de l'EFA, module bâtiment) puis findUnique (lecture de l'EFA).
+vi.mock("@/lib/db", () => ({
+  db: {
+    eFA: {
+      findMany: vi.fn(async () => [{ id: efa.id }]),
+      findUnique: vi.fn(async ({ where }: { where: { id: string } }) => (where.id === efa.id ? efa : null)),
+      update: (args: never) => update(args),
+    },
+  },
+}));
 vi.mock("@/lib/session", () => ({ getCurrentUser: vi.fn(async () => ({ id: "user-dupont", email: "demo.dupont@example.com", role: "OWNER" })) }));
 
 const ind = (year: number, status: YearIndicator["status"], consumptionKwh: number | null): YearIndicator =>

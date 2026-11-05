@@ -44,6 +44,12 @@ Identifier le bâtiment, son EFA et son propriétaire (adresse, RNB/BDNB, zone c
 - Site de démonstration (seed) : « Site de démonstration (fictif) », Laon 02000, sans adresse postale réelle ; EFA
   restauration (SCAP1803, 1 200 m², toujours la première) et EFA bureaux (SCAP0401, 500 m², id `<restauration>-bureaux`).
 
+## Sélecteur d'EFA (`efa-choice.ts`, `efa-selection.ts`, `EfaSelector.tsx`)
+- Règle unique, pure et testée : `pickEfaId(EFA de l'utilisateur, demandée, mémorisée)` → demandée (ou null → 404), sinon cookie, sinon la première.
+- `resolveUserEfaId(userId, efaId?)` : utilisé par surfaces, collecte, climat, comparateur, conformité et `loadUserSite`.
+- `GET /api/efa?id=…&back=/page` pose le cookie `mira-efa` et revient sur la page (retour limité aux pages internes : `safeBackPath`).
+- `<EfaSelector back="/page" efaId={…} />` : composant serveur affiché sous le titre de chaque page ; libellé `efaLabel` (activité OPERAT · surface · rôle).
+
 ## À faire dans ce module
 - [ ] Formulaire bâtiment + EFA
 - [ ] Recherche d'adresse / identifiant RNB (tâche 1.1)
