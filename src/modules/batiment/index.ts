@@ -7,3 +7,5 @@ export { DEPARTMENT_ZONES_FILE, parseDepartmentZones, readDepartmentZones, depar
 export type { DepartmentZone, ParsedDepartmentZones, ZoneErrorCode, ZoneError, ZoneResult } from "./zone-climatique";
 export { SITE_ALTITUDE_BAND, SITE_ALTITUDE_NOTE, BatimentError, loadUserSite } from "./site";
 export type { SiteEfa, UserSite } from "./site";
+export { EFA_COOKIE, efaLabel, efaParam, pickEfaId, safeBackPath } from "./efa-choice";
+export { resolveUserEfaId, userEfaIds } from "./efa-selection";

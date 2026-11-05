@@ -1,3 +1,5 @@
+import { efaParam } from "@/modules/batiment";
+import { EfaSelector } from "@/modules/batiment/EfaSelector";
 import Link from "next/link";
 import { CollecteError, ENERGY_LABELS, SOURCE_LABELS, loadCollecteContext, type CollecteContext } from "@/modules/collecte";
 import styles from "@/modules/collecte/Collecte.module.css";
@@ -6,11 +8,14 @@ export const dynamic = "force-dynamic";
 
 const nf = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
 
-export default async function Page() {
+type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function Page({ searchParams }: PageProps) {
+  const efaId = efaParam((await searchParams).efa); // ?efa= explicite, sinon EFA du sélecteur
   let context: CollecteContext | null = null;
   let problem: string | null = null;
   try {
-    context = await loadCollecteContext();
+    context = await loadCollecteContext(efaId);
   } catch (e) {
     problem = e instanceof CollecteError ? e.message : "Impossible de joindre la base de données : lancez `npm run db:up`, puis rechargez la page.";
     if (!(e instanceof CollecteError)) console.error(e);
@@ -21,6 +26,7 @@ export default async function Page() {
       <Link href="/" className="back">← Carte du projet</Link>
       <p className="eyebrow">Phase 02 · Collecte des données</p>
       <h1>Collecte des consommations</h1>
+      <EfaSelector back="/collecte" efaId={efaId} />
       <p>Toutes les consommations, quel que soit leur mode de collecte, sont enregistrées par la même couche d&apos;écriture : une valeur validée n&apos;est jamais écrasée par une valeur non validée.</p>
 
       <div className={styles.actions}>

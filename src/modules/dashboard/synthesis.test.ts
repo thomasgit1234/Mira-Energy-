@@ -321,3 +321,43 @@ describe("classifyError — erreurs des chargeurs", () => {
     expect(classifyError("texte")).toEqual({ ok: false, kind: "ERROR", message: "erreur inconnue" });
   });
 });
+
+describe("7.2 / 7.3 — frise et comparatif dans la synthèse", () => {
+  const NOW = new Date("2026-11-05T12:00:00Z");
+
+  it("cas nominal : frise 2013 → 2025 avec les jalons, comparatif N = 2025", () => {
+    const s = buildSynthesis(inputs(), NOW);
+    expect(s.sections.timeline.ok && s.sections.timeline.data.years.map((y) => [y.year, y.role])).toEqual([[2013, "REFERENCE"], [2019, "AUTRE"], [2025, "SUIVIE"]]);
+    expect(s.sections.timeline.ok && s.sections.timeline.data.milestones.map((m) => m.targetKwh)).toEqual([278400, 278400, 278400]);
+    expect(s.sections.comparison.ok && s.sections.comparison.data.years.map((y) => [y.label, y.year, y.state])).toEqual([
+      ["N-2", 2023, "ABSENTE"], ["N-1", 2024, "ABSENTE"], ["N", 2025, "COMPLETE"],
+    ]);
+  });
+
+  it("aucune consommation : frise et comparatif vides avec la même action (collecte)", () => {
+    const rows = CLIMAT.rows.map((r) => row(r.year, null, null, "PAS_DE_CONSOMMATION"));
+    const s = buildSynthesis(inputs({ climat: { ok: true, data: { ...CLIMAT, rows } } }), NOW);
+    for (const sec of [s.sections.timeline, s.sections.comparison]) {
+      expect(sec).toMatchObject({ ok: false, empty: { code: "PAS_DE_CONSOMMATION", action: { href: "/collecte" } } });
+    }
+  });
+
+  it("aucune année complète : la frise montre l'année incomplète, le comparatif attend une année N", () => {
+    const rows = [row(2025, 20000, null, "ANNEE_INCOMPLETE")];
+    const s = buildSynthesis(inputs({ climat: { ok: true, data: { ...CLIMAT, rows } } }), NOW);
+    expect(s.sections.timeline.ok && s.sections.timeline.data.years.map((y) => y.role)).toEqual(["INCOMPLETE"]);
+    expect(s.sections.comparison).toMatchObject({ ok: false, empty: { code: "ANNEE_INCOMPLETE" } });
+  });
+
+  it("conformité injoignable : frise et comparatif s'affichent quand même, sans objectif", () => {
+    const s = buildSynthesis(inputs({ conformite: { ok: false, kind: "ERROR", message: "boom" } }), NOW);
+    expect(s.sections.timeline.ok && s.sections.timeline.data.objectivesNote).toBe("Objectifs indisponibles : boom");
+    expect(s.sections.comparison.ok && s.sections.comparison.data.target2030Kwh).toBeNull();
+  });
+
+  it("base injoignable : les deux sections donnent la commande de démarrage", () => {
+    const s = buildSynthesis(inputs({ climat: DB }), NOW);
+    expect(s.sections.timeline).toMatchObject({ ok: false, empty: { code: "BASE_INJOIGNABLE" } });
+    expect(s.sections.comparison).toMatchObject({ ok: false, empty: { code: "BASE_INJOIGNABLE" } });
+  });
+});

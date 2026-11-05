@@ -1,4 +1,4 @@
-// Tâches 7.1 (synthèse) et 7.4 (états vides). Fonctions PURES : testées dans synthesis.test.ts.
+// Tâches 7.1 (synthèse), 7.2 (frise), 7.3 (comparatif N-2 / N-1 / N) et 7.4 (états vides). Fonctions PURES : testées dans synthesis.test.ts.
 //
 // buildSynthesis reçoit les résultats DÉJÀ chargés par les autres modules (ou leur erreur, déjà classée) et décide :
 // - ce que montre chaque section (site, verdict, objectifs, suivi), chacune indépendamment des autres ;
@@ -13,6 +13,7 @@ import type { SurfacesContext } from "@/modules/surfaces";
 import { validateSurfaceLines } from "@/modules/surfaces";
 import type { UserSite } from "@/modules/batiment";
 import { fmtM2 } from "./format";
+import { buildComparison, buildTimeline, type Comparison, type Timeline, type TrajectoryObjectives } from "./trajectory";
 
 // ---------------------------------------------------------------------------------------------------------------
 // Entrées : chaque source vaut { ok: true, data } ou une erreur déjà classée.
@@ -23,7 +24,9 @@ export type SourceError = { ok: false; kind: SourceErrorKind; message: string };
 export type Source<T> = { ok: true; data: T } | SourceError;
 
 // Formes minimales lues dans chaque source (les types complets des modules y sont assignables).
-export type SiteInput = Pick<UserSite, "postcode" | "city"> & { efas: Pick<UserSite["efas"][number], "id" | "surfaceTotal">[] };
+export type SiteInput = Pick<UserSite, "postcode" | "city"> & Partial<Pick<UserSite, "selectedEfaId">> & {
+  efas: Pick<UserSite["efas"][number], "id" | "surfaceTotal">[];
+};
 export type SurfacesInput = Pick<SurfacesContext, "efaId" | "buildingLabel" | "surfaceTotal" | "lines" | "referential">;
 export type ClimatInput = Pick<ClimatIndicators, "stationLabel" | "correctionAvailable" | "problem"> & {
   rows: Pick<
@@ -35,7 +38,11 @@ export type ComparateurInput = Pick<ComparatorData, "efaLabel" | "chosenYear">;
 export type ConformiteInput = Pick<ConformiteData, "reference" | "crelat" | "current"> & {
   cabs: ConformiteData["cabs"];
   site: Pick<ConformiteData["site"], "zone" | "sources">;
-  verdict: { main: Pick<ConformiteData["verdict"]["main"], "status" | "message" | "favorable" | "crelat" | "cabs"> };
+  verdict: {
+    main: Pick<ConformiteData["verdict"]["main"], "status" | "message" | "favorable" | "crelat" | "cabs">;
+    /** Les trois jalons (frise 7.2, objectif 2030 du comparatif 7.3). */
+    milestones: TrajectoryObjectives["verdict"]["milestones"];
+  };
 };
 
 export type DashboardInputs = {
@@ -156,7 +163,16 @@ export type StepState = "FAIT" | "A_FAIRE" | "INDISPONIBLE";
 export type Step = { id: StepId; label: string; state: StepState; detail: string; href: string | null };
 
 export type Synthesis = {
-  sections: { site: Section<SiteSection>; verdict: Section<VerdictSection>; objectives: Section<ObjectivesSection>; followUp: Section<FollowUpSection> };
+  sections: {
+    site: Section<SiteSection>;
+    verdict: Section<VerdictSection>;
+    objectives: Section<ObjectivesSection>;
+    followUp: Section<FollowUpSection>;
+    /** 7.2 — frise : consommations annuelles et jalons 2030 / 2040 / 2050. */
+    timeline: Section<Timeline>;
+    /** 7.3 — comparatif N-2 / N-1 / N autour de l'année suivie. */
+    comparison: Section<Comparison>;
+  };
   steps: Step[];
   /** Tous les manques détectés, triés par priorité (sans doublon de code). */
   empties: EmptyState[];
@@ -287,7 +303,7 @@ function sortEmpties(list: EmptyState[]): EmptyState[] {
 
 // ---------------------------------------------------------------------------------------------------------------
 
-export function buildSynthesis(inputs: DashboardInputs): Synthesis {
+export function buildSynthesis(inputs: DashboardInputs, now = new Date()): Synthesis {
   const { site, surfaces, climat, comparateur, conformite } = inputs;
   const all: EmptyState[] = [];
   const fail = (s: SourceError) => {
@@ -300,7 +316,7 @@ export function buildSynthesis(inputs: DashboardInputs): Synthesis {
   let siteSection: Section<SiteSection>;
   if (!site.ok) siteSection = { ok: false, empty: fail(site) };
   else {
-    const first = site.data.efas[0];
+    const first = site.data.efas.find((e) => e.id === site.data.selectedEfaId) ?? site.data.efas[0];
     siteSection = {
       ok: true,
       data: {
@@ -371,6 +387,21 @@ export function buildSynthesis(inputs: DashboardInputs): Synthesis {
     };
   }
 
+  // Frise (7.2) et comparatif (7.3) : mêmes sources que le suivi ; leurs manques sont déjà comptés plus haut.
+  const trajectoryObjectives: TrajectoryObjectives | null = conformite.ok ? conformite.data : null;
+  const objectivesProblem = conformite.ok ? null : conformite.message;
+  let timeline: Section<Timeline>;
+  if (!climat.ok) timeline = { ok: false, empty: sourceEmpty(climat) };
+  else if ("empty" in follow && follow.empty.code === "PAS_DE_CONSOMMATION") timeline = { ok: false, empty: follow.empty };
+  else {
+    const currentYear = "current" in follow ? follow.current.year : null;
+    timeline = { ok: true, data: buildTimeline(climat.data.rows, trajectoryObjectives, currentYear, objectivesProblem, now) };
+  }
+  // Sans année suivie (aucune année complète, base injoignable…), pas de N : même état vide que la consommation suivie.
+  const comparison: Section<Comparison> = "empty" in follow || !climat.ok
+    ? { ok: false, empty: "empty" in follow ? follow.empty : sourceEmpty(climat as SourceError) }
+    : { ok: true, data: buildComparison(climat.data.rows, follow.current.year, trajectoryObjectives) };
+
   // Chaîne de la démo.
   const unavailable = (s: { ok: boolean }) => !s.ok;
   const consumptionCodes: EmptyCode[] = ["PAS_DE_CONSOMMATION", "AUCUNE_ANNEE_SUIVIE", "ANNEE_INCOMPLETE"];
@@ -407,7 +438,7 @@ export function buildSynthesis(inputs: DashboardInputs): Synthesis {
     ? { action: first.action, reason: first.message, code: first.code }
     : { action: { label: "Voir le détail de la conformité", href: "/conformite" }, reason: "Toutes les étapes sont faites.", code: null };
 
-  return { sections: { site: siteSection, verdict, objectives, followUp }, steps, empties, nextAction };
+  return { sections: { site: siteSection, verdict, objectives, followUp, timeline, comparison }, steps, empties, nextAction };
 }
 
 // ---------------------------------------------------------------------------------------------------------------

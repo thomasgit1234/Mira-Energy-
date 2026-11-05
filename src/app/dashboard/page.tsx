@@ -1,11 +1,15 @@
+import { efaParam } from "@/modules/batiment";
+import { EfaSelector } from "@/modules/batiment/EfaSelector";
 import Link from "next/link";
 import {
-  DASHBOARD_BANNER, DATA_ORIGIN, STATE_LABELS, fmtKwh, fmtKwhPerM2, fmtKwhYear, fmtM2, loadDashboard,
-  type EmptyState, type Section, type StepState, type VerdictSection,
+  COMPARISON_STATE_LABELS, DASHBOARD_BANNER, DATA_ORIGIN, STATE_LABELS, fmtGapKwh, fmtKwh, fmtKwhPerM2, fmtKwhYear, fmtM2, fmtPct,
+  loadDashboard, type Comparison, type EmptyState, type Section, type StepState, type Timeline, type VerdictSection,
 } from "@/modules/dashboard";
 import styles from "@/modules/dashboard/Dashboard.module.css";
+import { ROLE_LABELS, TrajectoryChart } from "@/modules/dashboard/TrajectoryChart";
+import { STATUS_LABELS } from "@/modules/conformite";
 
-// Tâches 7.1 (synthèse) et 7.4 (états vides). Lecture seule, rendu serveur : loadDashboard ne lève jamais d'erreur.
+// Tâches 7.1 (synthèse), 7.2 (frise), 7.3 (comparatif N-2 / N-1 / N) et 7.4 (états vides). Lecture seule, rendu serveur : loadDashboard ne lève jamais d'erreur.
 export const dynamic = "force-dynamic";
 
 const ENERGY_LABELS: Record<string, string> = { ELECTRICITY: "électricité", GAS: "gaz naturel", PROPANE: "propane" };
@@ -36,16 +40,121 @@ function Card<T>({ title, id, section, className, children }: { title: string; i
   );
 }
 
-export default async function Page() {
-  const s = await loadDashboard();
-  const { site, verdict, objectives, followUp } = s.sections;
+const STATUS_TAG: Record<VerdictSection["status"], { cls: string; icon: string }> = {
+  CONFORME: { cls: styles.tagOk, icon: "✓" },
+  NON_CONFORME: { cls: styles.tagKo, icon: "✗" },
+  INDETERMINE: { cls: styles.tagNa, icon: "?" },
+};
+const WAY_SHORT = { CRELAT: "Crelat", CABS: "Cabs", EGALITE: "Crelat = Cabs" } as const;
+
+/** 7.2 — frise : graphique, puis les étapes clés (référence, année suivie, jalons) et le tableau des valeurs. */
+function TimelineView({ t }: { t: Timeline }) {
+  const ref = t.years.find((y) => y.role === "REFERENCE");
+  const current = t.years.find((y) => y.year === t.currentYear);
+  return (
+    <>
+      <TrajectoryChart t={t} />
+      {t.objectivesNote && <p className={styles.hint} role="status" data-testid="objectives-note">{t.objectivesNote}</p>}
+      <ol className={styles.frise} data-testid="frise">
+        <li className={styles.past}>
+          <strong>{t.referenceYear ?? "—"}</strong>
+          <span>Année de référence</span>
+          <span>{ref ? fmtKwh(ref.rawKwh) : "non choisie"}</span>
+        </li>
+        <li className={styles.past}>
+          <strong>{t.currentYear ?? "—"}</strong>
+          <span>Année suivie</span>
+          <span>{current ? fmtKwh(current.rawKwh) : "aucune année complète"}</span>
+        </li>
+        {t.milestones.map((m) => (
+          <li key={m.year} data-testid={`milestone-${m.year}`}>
+            <strong>{m.year}</strong>
+            <span>Objectif retenu : {m.targetKwh === null ? "non calculable" : `${fmtKwh(m.targetKwh)} (${WAY_SHORT[m.favorable ?? "CRELAT"]})`}</span>
+            <span>Crelat {fmtKwh(m.crelatKwh)} · Cabs {fmtKwh(m.cabsKwh)}</span>
+            {m.status && (
+              <span><span className={`${styles.tag} ${STATUS_TAG[m.status].cls}`}>{STATUS_TAG[m.status].icon} {STATUS_LABELS[m.status]}</span></span>
+            )}
+            <span className={styles.hint}>{m.yearsLeft > 0 ? `dans ${m.yearsLeft} an${m.yearsLeft > 1 ? "s" : ""}` : "échéance atteinte"}</span>
+          </li>
+        ))}
+      </ol>
+      <details className={styles.values}>
+        <summary>Voir les valeurs de la frise</summary>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead><tr><th scope="col">Année</th><th scope="col">Statut</th><th scope="col">Brute</th><th scope="col">Corrigée du climat</th><th scope="col">Objectif 2030</th></tr></thead>
+            <tbody>
+              {t.years.map((y) => (
+                <tr key={y.year}>
+                  <td>{y.year}</td>
+                  <td>{ROLE_LABELS[y.role]}</td>
+                  <td>{fmtKwh(y.rawKwh)}</td>
+                  <td>{fmtKwh(y.correctedKwh)}</td>
+                  <td>{y.vsTarget2030 === "SOUS" ? "✓ sous l'objectif" : y.vsTarget2030 === "AU_DESSUS" ? "✗ au-dessus" : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </>
+  );
+}
+
+/** 7.3 — comparatif N-2 / N-1 / N : une colonne par année, une ligne par indicateur. */
+function ComparisonView({ c }: { c: Comparison }) {
+  const cell = (fn: (y: Comparison["years"][number]) => React.ReactNode) => c.years.map((y) => <td key={y.year}>{fn(y)}</td>);
+  return (
+    <>
+      <div className={styles.tableWrap}>
+        <table className={styles.table} data-testid="comparison-table">
+          <thead>
+            <tr>
+              <th scope="col">Indicateur</th>
+              {c.years.map((y) => <th key={y.year} scope="col" data-testid={`col-${y.label}`}>{y.label}<span className={styles.sub}>{y.year}</span></th>)}
+            </tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">État</th>{cell((y) => <span className={styles.sub} data-state={y.state}>{COMPARISON_STATE_LABELS[y.state]}</span>)}</tr>
+            <tr><th scope="row">Consommation brute</th>{cell((y) => fmtKwh(y.rawKwh))}</tr>
+            <tr><th scope="row">Évolution brute<span className={styles.sub}>par rapport à l&apos;année précédente</span></th>{cell((y) => fmtPct(y.rawChangePct))}</tr>
+            <tr><th scope="row">Consommation corrigée du climat</th>{cell((y) => fmtKwh(y.correctedKwh))}</tr>
+            <tr><th scope="row">Évolution corrigée<span className={styles.sub}>hors effet du climat</span></th>{cell((y) => fmtPct(y.correctedChangePct))}</tr>
+            <tr><th scope="row">kWh corrigés/m²</th>{cell((y) => fmtKwhPerM2(y.correctedKwhPerM2))}</tr>
+            <tr>
+              <th scope="row">Écart à la référence<span className={styles.sub}>{c.referenceYear ? `Créf ${c.referenceYear} : ${fmtKwh(c.crefKwh)}` : "année de référence non choisie"}</span></th>
+              {cell((y) => fmtPct(y.vsCrefPct))}
+            </tr>
+            <tr>
+              <th scope="row">Écart à l&apos;objectif 2030<span className={styles.sub}>{c.target2030Kwh === null ? "objectif non calculable" : `objectif retenu : ${fmtKwh(c.target2030Kwh)}`}</span></th>
+              {cell((y) => y.gap2030Kwh === null ? "—" : (
+                <span className={`${styles.tag} ${y.gap2030Kwh <= 0 ? styles.tagOk : styles.tagKo}`}>{y.gap2030Kwh <= 0 ? "✓" : "✗"} {fmtGapKwh(y.gap2030Kwh)}</span>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className={styles.hint}>N = dernière année complète hors 2020 et 2021. Une évolution n&apos;est calculée qu&apos;entre deux années
+        complètes. Écart négatif à l&apos;objectif = marge sous l&apos;objectif. La conformité se juge sur la consommation brute ; la
+        corrigée montre l&apos;évolution sans l&apos;effet de la météo.</p>
+    </>
+  );
+}
+
+type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function Page({ searchParams }: PageProps) {
+  const efaId = efaParam((await searchParams).efa); // ?efa= explicite, sinon EFA du sélecteur
+  const s = await loadDashboard(efaId);
+  const { site, verdict, objectives, followUp, timeline, comparison } = s.sections;
   const next = s.nextAction;
 
   return (
     <main className="page">
       <Link href="/" className="back">← Carte du projet</Link>
-      <p className="eyebrow">Tâches 7.1 et 7.4 · Tableau de bord</p>
+      <p className="eyebrow">Tâches 7.1 à 7.4 · Tableau de bord</p>
       <h1>Synthèse de l&apos;EFA</h1>
+      <EfaSelector back="/dashboard" efaId={efaId} />
       <p className={styles.banner} role="note" data-testid="demo-banner">{DASHBOARD_BANNER}</p>
 
       <section className={`${styles.next} ${next.code === null ? styles.nextDone : ""}`} aria-labelledby="next-title" data-testid="next-action" data-code={next.code ?? "AUCUN"}>
@@ -118,6 +227,14 @@ export default async function Page() {
           )}
         </Card>
       </div>
+
+      <Card title="Frise : de l'année de référence à 2050" id="timeline" section={timeline} className={styles.wide}>
+        {(d) => <TimelineView t={d} />}
+      </Card>
+
+      <Card title="Comparatif N-2 / N-1 / N" id="comparison" section={comparison} className={styles.wide}>
+        {(d) => <ComparisonView c={d} />}
+      </Card>
 
       <section aria-labelledby="steps-title" data-testid="steps">
         <h2 id="steps-title">Chaîne de la démonstration</h2>

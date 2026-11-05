@@ -45,7 +45,7 @@ export type ConformiteData = {
   current: { year: number; consumptionKwh: number } | null;
   verdict: Verdict;
   site: SiteContext;
-  /** Cabs des autres EFA du site (sans verdict : sélecteur d'EFA à venir, D18). */
+  /** Cabs des autres EFA du site (leur verdict complet : choisir l'EFA avec le sélecteur). */
   otherEfas: EfaCabs[];
   cabsCoverageNote: string;
 };
@@ -80,10 +80,13 @@ function readCabsRows(): { ok: true; rows: CabsRow[] } | { ok: false; message: s
   }
 }
 
-export async function loadConformite(): Promise<ConformiteData> {
-  const comparator = await from(loadComparator);
-  const surfaces = await from(loadSurfacesContext);
-  const userSite = await from(loadUserSite);
+/** Conformité de l'EFA choisie (efaId, sinon sélecteur d'EFA, sinon la première). EFA d'un autre utilisateur → 404. */
+export async function loadConformite(efaId?: string): Promise<ConformiteData> {
+  // L'EFA est résolue une fois, puis transmise : toutes les sources parlent de la même EFA.
+  const userSite = await from(() => loadUserSite(efaId));
+  const selected = userSite.selectedEfaId;
+  const comparator = await from(() => loadComparator(selected));
+  const surfaces = await from(() => loadSurfacesContext(selected));
 
   // Créf = consommation brute de l'année de référence choisie (tâche 5), seulement si elle est toujours éligible.
   const chosen = comparator.chosenYear;

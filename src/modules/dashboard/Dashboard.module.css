@@ -39,3 +39,28 @@
 @media (min-width: 900px) { .origin { grid-template-columns: 1fr 1fr; } }
 .origin ul { margin: 0; padding-left: 18px; }
 .hint { color: var(--muted); font-size: .85rem; }
+/* 7.2 — frise ; 7.3 — comparatif. */
+.wide { margin: 16px 0; }
+.figure { margin: 4px 0 0; overflow-x: auto; }
+.chart { width: 100%; min-width: 560px; height: auto; display: block; }
+.legend text { font-size: 12px; fill: #5d6b66; }
+.axis { font-size: 11px; fill: #5d6b66; font-variant-numeric: tabular-nums; }
+.axisStrong { font-size: 11px; fill: #1f2a27; font-weight: 700; }
+.valueLabel { font-size: 11px; fill: #1f2a27; font-weight: 600; font-variant-numeric: tabular-nums; }
+.frise { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.frise li { flex: 1 1 140px; min-width: 0; border: 1px solid var(--rule); border-top: 4px solid #c9d2ce; border-radius: 8px; padding: 8px 10px; background: #fbfcfc; }
+.frise li.past { border-top-color: var(--petrol); }
+.frise strong { display: block; font-size: 1.05rem; color: var(--petrol); }
+.frise span { display: block; font-size: .85rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tableWrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.table th, .table td { padding: 6px 8px; border-bottom: 1px solid var(--rule); text-align: right; white-space: nowrap; }
+.table th:first-child, .table td:first-child { text-align: left; white-space: normal; }
+.table thead th { color: var(--muted); font-weight: 600; font-size: .85rem; }
+.table .sub { display: block; font-weight: 400; color: var(--muted); font-size: .8rem; }
+.tag { display: inline-block; font-size: .78rem; padding: 1px 8px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+.tagOk { color: #1f7a5a; border-color: #1f7a5a; background: #eaf5f0; }
+.tagKo { color: #8c1d17; border-color: #b3261e; background: #fbeceb; }
+.tagNa { color: #8a5a12; border-color: #e3c58f; background: #fdf6e8; }
+details.values { margin-top: 8px; }
+details.values summary { cursor: pointer; color: var(--petrol); }
