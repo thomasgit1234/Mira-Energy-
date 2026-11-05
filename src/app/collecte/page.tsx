@@ -26,6 +26,7 @@ export default async function Page() {
       <div className={styles.actions}>
         <Link href="/collecte/saisie" className={styles.primary}>Saisie manuelle (2.2)</Link>
         <Link href="/collecte/import" className={styles.secondary}>Import CSV (2.1)</Link>
+        <Link href="/collecte/historique" className={styles.secondary}>Demande d&apos;historique (2.3)</Link>
       </div>
 
       <h2>Données déjà collectées</h2>
