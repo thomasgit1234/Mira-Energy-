@@ -21,7 +21,7 @@ retenir 2013 dans /comparateur (voir RECETTE-6).
 ## Automatique
 | Vérification | Commande | Attendu |
 |---|---|---|
-| Synthèse, états vides, priorité, erreurs, formats | `npx vitest run src/modules/dashboard` | 36 passés |
+| Synthèse, frise, comparatif, états vides, priorité, erreurs, formats | `npx vitest run src/modules/dashboard` | 54 passés |
 | Projet complet | `npm run check` | tout vert |
 
 ## Nominal — http://localhost:3000/dashboard
@@ -40,6 +40,18 @@ retenir 2013 dans /comparateur (voir RECETTE-6).
 Contrôle côté serveur : `curl http://localhost:3000/api/dashboard` → `sections.verdict.data.status = "CONFORME"`,
 `sections.objectives.data = { referenceYear: 2013, crefKwh: 52800, crelat: { 2030: 31680, 2040: 26400, 2050: 21120 }, cabsKwh: 278400 }`,
 `sections.followUp.data = { year: 2025, consumptionKwh: 40500, correctedKwh: 41651.33, correctedKwhPerM2: 34.71, … }`, `nextAction.code = null`.
+
+## Frise (7.2) et comparatif (7.3) — même page
+Pré-requis : site de démo avec le CSV d'exemple importé (2010-2018) et la référence 2013 choisie.
+
+| # | Contrôle | Attendu | OK ? |
+|---|---|---|---|
+| 10 | Frise : barres | une barre par année renseignée ; 2013 foncée « Réf. 52 800 kWh », 2025 foncée « Suivie 40 500 kWh » ; survol = brute et corrigée | ☐ |
+| 11 | Frise : objectifs | losanges Crelat 31 680 / 26 400 / 21 120 kWh reliés à 2013 en pointillés ; mention « ▲ Cabs : 278 400 kWh/an, hors échelle » | ☐ |
+| 12 | Frise : étapes | Référence 2013 · Année suivie 2025 · 2030 / 2040 / 2050 : objectif retenu 278 400 kWh (Cabs), « ✓ CONFORME », « dans 4 / 14 / 24 ans » (en 2026) | ☐ |
+| 13 | Comparatif | colonnes N-2 2023, N-1 2024, N 2025 ; 2023 et 2024 « Aucune consommation » (seed) ; N : brute 40 500 kWh, écart à la référence −23,3 %, écart à l'objectif 2030 « ✓ −237 900 kWh » | ☐ |
+| 14 | Évolutions | saisir 2024 complète (/collecte/saisie) : la colonne N affiche l'évolution brute et corrigée ; avec 2024 incomplète : « — » | ☐ |
+| 15 | Sans référence | vider `referenceYear` : pas de losange Crelat, objectif retenu = Cabs, écart à la référence « — » | ☐ |
 
 ## États vides — une ligne par cas
 Tous les cas sont prouvés par `src/modules/dashboard/synthesis.test.ts` (aucune modification de base nécessaire). Pour les

@@ -1,4 +1,4 @@
-# Module `dashboard` — Tableau de bord (Phase 07, tâches 7.1 et 7.4)
+# Module `dashboard` — Tableau de bord (Phase 07, tâches 7.1 à 7.4)
 
 Synthèse de l'EFA (la première du bâtiment de l'utilisateur, comme les autres pages, D18) et états vides : chaque donnée
 manquante donne un message clair et **une** action, au lieu d'une page cassée ou vide.
@@ -14,6 +14,8 @@ manquante donne un message clair et **une** action, au lieu d'une page cassée o
 | Fichier | Rôle |
 |---|---|
 | `synthesis.ts` | **Pur.** `buildSynthesis(inputs)` → `{ sections, steps, empties, nextAction }` ; `classifyError` (erreur d'un chargeur → `AUTH` / `NOT_FOUND` / `DB` / `ERROR`) ; constantes du bandeau et de l'encadré réel / fictif. |
+| `trajectory.ts` | **Pur.** `buildTimeline` (frise 7.2 : années avec leur rôle, jalons 2030 / 2040 / 2050) et `buildComparison` (tableau N-2 / N-1 / N, 7.3), `changePct`. Objectifs et statuts repris du verdict de la conformité, jamais recalculés. |
+| `TrajectoryChart.tsx` | Graphique SVG de la frise (rendu serveur, aucune dépendance) : barres brutes, trajectoire Crelat, seuil Cabs (ou « hors échelle »), info-bulle par barre. |
 | `format.ts` | **Pur.** Formats français (`fmtKwh`, `fmtKwhYear`, `fmtM2`, `fmtKwhPerM2`) : espace fine insécable pour les milliers, virgule décimale. |
 | `repository.ts` | `loadDashboard()` : appelle les 5 chargeurs avec `Promise.allSettled`, classe leurs erreurs, appelle `buildSynthesis`. Ne lève jamais d'erreur, n'écrit rien. |
 | `Dashboard.module.css` | Une colonne sur mobile, deux à partir de 900 px. |
@@ -23,7 +25,24 @@ manquante donne un message clair et **une** action, au lieu d'une page cassée o
 Site et EFA · Verdict 2030 (texte + icône ✓ / ✗ / ?, méthode retenue, voie la plus favorable) · Objectifs (année de
 référence, Créf, Crelat 2030 / 2040 / 2050, Cabs) · Consommation suivie (brute, corrigée du climat, kWh corrigés/m²) · Chaîne de la démo (6 étapes, fait /
 à faire / indisponible ; l'étape « bâtiment » n'a pas de lien tant que le module est un squelette) · Encadré réel / fictif.
-Hors périmètre : frise (7.2) et comparatif (7.3).
+## Frise (7.2)
+Graphique de la première année renseignée à 2050 : une barre par année (consommation **brute**), année de référence et
+année suivie en foncé avec un libellé, 2020-2021 et années incomplètes hachurées. Trajectoire Crelat en pointillés (Créf →
+losanges 2030 / 2040 / 2050), seuil Cabs en ligne horizontale ; si le Cabs dépasse 1,6 × la plus forte consommation (cas du
+restaurant : 278 400 kWh/an pour ~50 000 kWh consommés), il est signalé « hors échelle » au lieu d'écraser les barres.
+Sous le graphique : la frise des étapes (référence, année suivie, puis chaque jalon avec objectif retenu, Crelat, Cabs,
+statut ✓ / ✗ / ? et années restantes) et un tableau des valeurs. « Objectif retenu » = objectif de la voie la plus favorable
+(`favorable` du verdict). Les années complètes après la référence (hors 2020-2021) sont classées sous / au-dessus de
+l'objectif 2030 retenu.
+
+## Comparatif N-2 / N-1 / N (7.3)
+N = année suivie (dernière année complète hors 2020 et 2021, `pickCurrentYear`). Pour chaque année : état (complète,
+incomplète, absente, exclue 2020-2021), brute, corrigée du climat, kWh corrigés/m², évolution brute et corrigée par rapport à
+l'année précédente (**seulement entre deux années complètes**), écart à Créf (%) et à l'objectif 2030 retenu (kWh ; négatif =
+marge). 2020-2021 : valeurs affichées, ni écart à la référence ni écart à l'objectif.
+États vides : sans consommation, frise et comparatif reprennent l'état de la consommation suivie (→ /collecte) ; sans année
+complète, la frise s'affiche (années incomplètes hachurées) mais pas le comparatif ; conformité indisponible : consommations
+affichées, objectifs absents avec la raison.
 
 ## États vides (7.4)
 Chaque section ne lit que ses sources : si l'une échoue, les autres s'affichent quand même. La **prochaine action** est le
