@@ -3,6 +3,7 @@
 import { join } from "node:path";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { resolveUserEfaId } from "@/modules/batiment";
 import { CLIMATE_FILE, CLIMATE_STATION, readClimateFile, type ClimateYear } from "./coefficients-source";
 import { buildYearIndicators, type YearIndicator } from "./indicators";
 import { ACTIVITY_LABELS, efaCategory } from "./usage-shares";
@@ -45,20 +46,21 @@ export function loadClimateRows(): { rows: ClimateYear[] } | { problem: string }
 }
 
 /**
- * Consommation brute et corrigée du climat, par année et par mois, pour la première EFA du bâtiment de l'utilisateur
- * courant (D18). Même cloisonnement que les surfaces : sans utilisateur → 401, sans bâtiment → 404.
+ * Consommation brute et corrigée du climat, par année et par mois, pour l'EFA choisie de l'utilisateur courant
+ * (efaId, sinon sélecteur d'EFA, sinon la première). Même cloisonnement que les surfaces : sans utilisateur → 401, sans bâtiment → 404.
  */
-export async function loadClimatIndicators(): Promise<ClimatIndicators> {
+export async function loadClimatIndicators(efaId?: string): Promise<ClimatIndicators> {
   const user = await getCurrentUser();
   if (!user) throw new ClimatError(401, "Aucun utilisateur connecté (lancez `npm run demo` pour créer le compte de démonstration).");
-  const efa = await db.eFA.findFirst({
-    where: { building: { users: { some: { id: user.id } } } },
+  const id = await resolveUserEfaId(user.id, efaId);
+  if (!id && efaId) throw new ClimatError(404, "EFA introuvable.");
+  const efa = id === null ? null : await db.eFA.findUnique({
+    where: { id },
     include: {
       building: true,
       surfaces: { select: { categoryCode: true } },
       consumptions: { include: { months: { select: { month: true, kwh: true } } } },
     },
-    orderBy: { id: "asc" },
   });
   if (!efa) throw new ClimatError(404, "Aucun bâtiment rattaché à cet utilisateur (lancez `npm run db:seed`).");
 

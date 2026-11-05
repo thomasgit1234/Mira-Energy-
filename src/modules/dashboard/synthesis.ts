@@ -23,7 +23,9 @@ export type SourceError = { ok: false; kind: SourceErrorKind; message: string };
 export type Source<T> = { ok: true; data: T } | SourceError;
 
 // Formes minimales lues dans chaque source (les types complets des modules y sont assignables).
-export type SiteInput = Pick<UserSite, "postcode" | "city"> & { efas: Pick<UserSite["efas"][number], "id" | "surfaceTotal">[] };
+export type SiteInput = Pick<UserSite, "postcode" | "city"> & Partial<Pick<UserSite, "selectedEfaId">> & {
+  efas: Pick<UserSite["efas"][number], "id" | "surfaceTotal">[];
+};
 export type SurfacesInput = Pick<SurfacesContext, "efaId" | "buildingLabel" | "surfaceTotal" | "lines" | "referential">;
 export type ClimatInput = Pick<ClimatIndicators, "stationLabel" | "correctionAvailable" | "problem"> & {
   rows: Pick<
@@ -300,7 +302,7 @@ export function buildSynthesis(inputs: DashboardInputs): Synthesis {
   let siteSection: Section<SiteSection>;
   if (!site.ok) siteSection = { ok: false, empty: fail(site) };
   else {
-    const first = site.data.efas[0];
+    const first = site.data.efas.find((e) => e.id === site.data.selectedEfaId) ?? site.data.efas[0];
     siteSection = {
       ok: true,
       data: {

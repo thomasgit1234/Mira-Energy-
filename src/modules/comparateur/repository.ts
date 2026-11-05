@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { loadUserSite, resolveUserEfaId } from "@/modules/batiment";
 import { ClimatError, loadClimatIndicators } from "@/modules/climat";
 import { buildComparatorRows, suggestReferenceYear, validateReferenceChoice, type ComparatorRow } from "./reference";
 
@@ -30,23 +31,34 @@ export type ComparatorData = {
 
 const ROLE_LABELS: Record<string, string> = { OWNER_OCCUPIER: "propriétaire occupant", LANDLORD: "bailleur", TENANT: "locataire" };
 
-/** EFA de l'utilisateur courant (une seule pour l'instant : la première du bâtiment, comme le module surfaces). */
-async function requireUserEfa() {
+/** EFA choisie de l'utilisateur courant (efaId, sinon sélecteur d'EFA, sinon la première). */
+async function requireUserEfa(efaId?: string) {
   const user = await getCurrentUser();
   if (!user) throw new ComparateurError(401, "Aucun utilisateur connecté (lancez `npm run demo` pour créer le compte de démonstration).");
-  const efa = await db.eFA.findFirst({
-    where: { building: { users: { some: { id: user.id } } } },
-    include: { building: true },
-    orderBy: { id: "asc" },
-  });
+  const id = await resolveUserEfaId(user.id, efaId);
+  // Cloisonnement (9.3) : on ne distingue pas « inexistante » et « pas la vôtre ».
+  if (!id && efaId) throw new ComparateurError(404, "EFA introuvable.");
+  const efa = id === null ? null : await db.eFA.findUnique({ where: { id }, include: { building: true } });
   if (!efa) throw new ComparateurError(404, "Aucun bâtiment rattaché à cet utilisateur (lancez `npm run db:seed`).");
   return { user, efa };
 }
 
-/** Indicateurs annuels du module climat ; ses erreurs gardent leur code HTTP. */
-async function loadIndicators() {
+/** Libellé lisible de l'EFA (activité · surface · rôle, module bâtiment) ; repli sur l'ancien libellé si le site est illisible. */
+async function readableEfaLabel(efa: { id: string; entityType: string; role: string }): Promise<string> {
   try {
-    return await loadClimatIndicators();
+    const site = await loadUserSite(efa.id);
+    const label = site.efas.find((e) => e.id === efa.id)?.label;
+    if (label) return label;
+  } catch {
+    // repli ci-dessous : le libellé n'empêche jamais d'afficher le comparateur
+  }
+  return `EFA ${efa.entityType} · ${ROLE_LABELS[efa.role] ?? efa.role}`;
+}
+
+/** Indicateurs annuels du module climat ; ses erreurs gardent leur code HTTP. */
+async function loadIndicators(efaId: string) {
+  try {
+    return await loadClimatIndicators(efaId);
   } catch (e) {
     if (e instanceof ClimatError) throw new ComparateurError(e.status, e.message);
     throw e;
@@ -54,13 +66,13 @@ async function loadIndicators() {
 }
 
 /** 5.1 / 5.2 — Données du comparateur pour l'EFA de l'utilisateur courant. Lecture seule. */
-export async function loadComparator(): Promise<ComparatorData> {
-  const { efa } = await requireUserEfa();
-  const climat = await loadIndicators();
+export async function loadComparator(efaId?: string): Promise<ComparatorData> {
+  const { efa } = await requireUserEfa(efaId);
+  const climat = await loadIndicators(efa.id);
   const suggested = suggestReferenceYear(climat.rows); // 5.2 : calculée ici, jamais côté client
   return {
     buildingLabel: climat.buildingLabel,
-    efaLabel: `EFA ${efa.entityType} · ${ROLE_LABELS[efa.role] ?? efa.role}`,
+    efaLabel: await readableEfaLabel(efa),
     efaId: efa.id,
     rows: buildComparatorRows(climat.rows, suggested?.year ?? null),
     suggested,
@@ -85,11 +97,9 @@ export async function chooseReferenceYear(rawInput: unknown): Promise<{ ok: true
   if (!parsed.success) throw new ComparateurError(400, "Requête invalide.");
   const { year, efaId } = parsed.data;
 
-  const { efa } = await requireUserEfa();
-  // Cloisonnement (9.3) : on ne distingue pas « inexistante » et « pas la vôtre ».
-  if (efaId !== undefined && efaId !== efa.id) throw new ComparateurError(404, "EFA introuvable.");
+  const { efa } = await requireUserEfa(efaId); // EFA d'un autre utilisateur → 404 (cloisonnement 9.3)
 
-  const { rows } = await loadComparator();
+  const { rows } = await loadComparator(efa.id);
   const check = validateReferenceChoice(year, rows);
   if (!check.ok) {
     throw new ComparateurError(422, "Cette année ne peut pas être l'année de référence.", [{ code: check.code, message: check.message }]);

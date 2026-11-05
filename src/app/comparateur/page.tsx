@@ -1,3 +1,5 @@
+import { efaParam } from "@/modules/batiment";
+import { EfaSelector } from "@/modules/batiment/EfaSelector";
 import Link from "next/link";
 import {
   ComparateurError, DEMO_BANNER, RAW_NOTICE, REFERENCE_PERIOD, SUGGESTED_LABEL, SUGGESTION_HELP, formatKwh, loadComparator,
@@ -9,11 +11,14 @@ import styles from "@/modules/comparateur/Comparateur.module.css";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page() {
+type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function Page({ searchParams }: PageProps) {
+  const efaId = efaParam((await searchParams).efa); // ?efa= explicite, sinon EFA du sélecteur
   let data: ComparatorData | null = null;
   let problem: string | null = null;
   try {
-    data = await loadComparator();
+    data = await loadComparator(efaId);
   } catch (e) {
     problem = e instanceof ComparateurError ? e.message : "Impossible de joindre la base de données : lancez `npm run db:up`, puis rechargez la page.";
     if (!(e instanceof ComparateurError)) console.error(e);
@@ -29,6 +34,7 @@ export default async function Page() {
       <Link href="/" className="back">← Carte du projet</Link>
       <p className="eyebrow">Tâches 5.1 à 5.3 · Comparateur d&apos;années</p>
       <h1>Choisir l&apos;année de référence</h1>
+      <EfaSelector back="/comparateur" efaId={efaId} />
       {DEMO_BANNER && <p className={styles.banner} role="note" data-testid="demo-banner">{DEMO_BANNER}</p>}
       <p>
         L&apos;année de référence est une année <strong>pleine de 12 mois</strong>, choisie entre {REFERENCE_PERIOD.from} et {REFERENCE_PERIOD.to}.

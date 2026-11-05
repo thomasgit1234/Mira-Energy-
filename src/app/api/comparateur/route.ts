@@ -1,13 +1,15 @@
 // API du comparateur d'années (tâches 5.1 et 5.2). Lecture seule.
 //   GET /api/comparateur → { buildingLabel, efaLabel, efaId, rows, suggested, chosenYear }
+import { efaParam } from "@/modules/batiment";
 import { NextResponse } from "next/server";
 import { ComparateurError, loadComparator } from "@/modules/comparateur";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+// ?efa=<id> : EFA explicite (404 si elle n'est pas à l'utilisateur) ; sans paramètre, EFA du sélecteur (cookie).
+export async function GET(request: Request) {
   try {
-    return NextResponse.json(await loadComparator());
+    return NextResponse.json(await loadComparator(efaParam(new URL(request.url).searchParams.get("efa"))));
   } catch (e) {
     if (e instanceof ComparateurError) return NextResponse.json({ error: e.message, issues: e.issues }, { status: e.status });
     console.error(e);
