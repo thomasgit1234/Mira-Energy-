@@ -45,7 +45,15 @@ Identifier le bâtiment, son EFA et son propriétaire (adresse, RNB/BDNB, zone c
 - `SITE_ALTITUDE_BAND = "<400"` : tranche d'altitude du site de démo de Laon, **à confirmer (IGN)**, constante isolée (D15)
   tant que la tâche 1.1 ne lit pas l'altitude.
 - Site de démonstration (seed) : « Site de démonstration (fictif) », Laon 02000, sans adresse postale réelle ; EFA
-  restauration (SCAP1803, 1 200 m², toujours la première) et EFA bureaux (SCAP0401, 500 m², id `<restauration>-bureaux`).
+  restauration (SCAP1803, 1 200 m², toujours la première) et EFA bureaux (SCAP0401, 500 m², id `<restauration>-bureaux`,
+  rôle TENANT, occupée par le locataire fictif `locataire.demo@example.com` : tâche 9.3).
+
+## Cloisonnement propriétaire / locataire (`access.ts`, tâche 9.3, D22)
+- **Pur.** `canAccessEfa`, `visibleEfaIds` : OWNER / ADMIN → toutes les EFA de leurs bâtiments (Building.users) ; TENANT →
+  seulement les EFA dont il est occupant (EFA.occupants) ; rôle inconnu → rien. `canEditBuilding` : OWNER / ADMIN.
+- Appliqué par `userEfaIds` (donc par toutes les pages et API via `resolveUserEfaId`), par `userCanAccessEfa` (écritures
+  collecte et surfaces) et par `loadUserSite` (seules les EFA visibles sont renvoyées : sélecteur, « Autres EFA du site »).
+- `UserSite.user` : adresse, rôle, libellé, droit de modifier la fiche ; affiché au-dessus du sélecteur d'EFA.
 
 ## Sélecteur d'EFA (`efa-choice.ts`, `efa-selection.ts`, `EfaSelector.tsx`)
 - Règle unique, pure et testée : `pickEfaId(EFA de l'utilisateur, demandée, mémorisée)` → demandée (ou null → 404), sinon cookie, sinon la première.

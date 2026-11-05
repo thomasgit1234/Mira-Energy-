@@ -14,6 +14,10 @@ export async function EfaSelector({ back, efaId }: Props) {
     return null;
   }
   return (
+    <>
+    <p className={styles.user} data-testid="current-user" data-role={site.user.role}>
+      Utilisateur : <strong>{site.user.email}</strong> ({site.user.roleLabel}) · <a href="/securite">changer</a>
+    </p>
     <nav className={styles.selector} aria-label="Choix de l'EFA" data-testid="efa-selector">
       <span className={styles.label}>EFA :</span>
       {site.efas.map((e) => {
@@ -31,5 +35,6 @@ export async function EfaSelector({ back, efaId }: Props) {
         );
       })}
     </nav>
+    </>
   );
 }

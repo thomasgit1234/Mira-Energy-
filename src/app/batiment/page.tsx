@@ -43,7 +43,7 @@ export default async function Page({ searchParams }: PageProps) {
 
           <section className={styles.card} aria-labelledby="form-title">
             <h2 id="form-title">Identification du bâtiment</h2>
-            <BuildingForm sheet={sheet} canEdit />
+            <BuildingForm sheet={sheet} canEdit={sheet.canEdit} />
           </section>
 
           <section className={styles.card} aria-labelledby="efa-title" data-testid="building-efas">

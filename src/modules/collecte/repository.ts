@@ -4,7 +4,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { resolveUserEfaId } from "@/modules/batiment";
+import { resolveUserEfaId, userCanAccessEfa } from "@/modules/batiment";
 import { saveConsumption, type SkippedMonth } from "@/lib/consumption-writer";
 import { MIN_YEAR, maxYear, type EnergyType } from "@/lib/domain";
 import { isEnergyType, validateManualEntry, type EntryIssue } from "./manual";
@@ -71,9 +71,8 @@ async function requireUserEfa(efaId?: string) {
 export async function assertEfaOwnedByCurrentUser(efaId: string): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new CollecteError(401, "Aucun utilisateur connecté.");
-  const efa = await db.eFA.findUnique({ where: { id: efaId }, include: { building: { include: { users: { select: { id: true } } } } } });
-  // On ne distingue pas « inexistante » et « pas la vôtre ».
-  if (!efa || !efa.building.users.some((u) => u.id === user.id)) throw new CollecteError(404, "EFA introuvable.");
+  // Règle unique du cloisonnement (D22) ; on ne distingue pas « inexistante » et « pas la vôtre ».
+  if (!(await userCanAccessEfa(user.id, efaId))) throw new CollecteError(404, "EFA introuvable.");
 }
 
 export async function loadCollecteContext(efaId?: string): Promise<CollecteContext> {

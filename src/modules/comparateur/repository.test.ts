@@ -10,11 +10,13 @@ const update = vi.fn(async ({ data }: { data: { referenceYear: number } }) => {
   return efa;
 });
 
-// L'utilisateur de démo n'a qu'une EFA : findMany (choix de l'EFA, module bâtiment) puis findUnique (lecture de l'EFA).
+// L'utilisateur de démo (propriétaire) n'a qu'une EFA : user.findUnique + findMany (règle d'accès 9.3, module bâtiment),
+// puis findUnique (lecture de l'EFA).
 vi.mock("@/lib/db", () => ({
   db: {
+    user: { findUnique: vi.fn(async () => ({ id: "user-dupont", role: "OWNER" })) },
     eFA: {
-      findMany: vi.fn(async () => [{ id: efa.id }]),
+      findMany: vi.fn(async () => [{ id: efa.id, building: { users: [{ id: "user-dupont" }] }, occupants: [] }]),
       findUnique: vi.fn(async ({ where }: { where: { id: string } }) => (where.id === efa.id ? efa : null)),
       update: (args: never) => update(args),
     },

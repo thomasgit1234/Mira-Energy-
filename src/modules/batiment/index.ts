@@ -8,7 +8,9 @@ export type { DepartmentZone, ParsedDepartmentZones, ZoneErrorCode, ZoneError, Z
 export { SITE_ALTITUDE_BAND, SITE_ALTITUDE_NOTE, BatimentError, loadUserSite } from "./site";
 export type { SiteEfa, UserSite } from "./site";
 export { EFA_COOKIE, efaLabel, efaParam, pickEfaId, safeBackPath } from "./efa-choice";
-export { resolveUserEfaId, userEfaIds } from "./efa-selection";
+export { resolveUserEfaId, userEfaIds, userCanAccessEfa } from "./efa-selection";
+export { USER_ROLES, USER_ROLE_LABELS, isUserRole, canAccessEfa, visibleEfaIds, canEditBuilding } from "./access";
+export type { UserRole, AccessUser, AccessEfa } from "./access";
 // Fiche bâtiment (1.1) et zone climatique (1.2).
 export { RNB_API, RNB_SITE, RNB_STATUS_LABELS, normalizeRnbId, checkRnbId, formatRnbId, parseRnbBuilding, parseRnbAddressSearch, fetchRnbBuilding, searchRnbByAddress } from "./rnb-source";
 export type { RnbAddress, RnbBuilding, RnbError, RnbErrorCode, RnbLookup, RnbSearch } from "./rnb-source";

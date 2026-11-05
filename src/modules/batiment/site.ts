@@ -1,8 +1,9 @@
 // Site de l'utilisateur courant : bâtiment et EFA, lus en base. Serveur uniquement.
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { efaLabel } from "./efa-choice";
-import { resolveUserEfaId } from "./efa-selection";
+import { canEditBuilding, isUserRole, USER_ROLE_LABELS } from "./access";
+import { efaLabel, pickEfaId } from "./efa-choice";
+import { rememberedEfaId, userEfaIds } from "./efa-selection";
 
 /**
  * Tranche d'altitude du site de démo (Laon) pour le Cabs : « < 400 m », À CONFIRMER (IGN).
@@ -33,12 +34,14 @@ export type SiteEfa = {
 };
 
 export type UserSite = {
+  /** Utilisateur courant et ses droits (cloisonnement 9.3, D22). */
+  user: { email: string; role: string; roleLabel: string; canEditBuilding: boolean };
   buildingId: string;
   postcode: string;
   city: string;
   /** EFA affichée par les pages (choix du sélecteur, sinon la première). */
   selectedEfaId: string;
-  /** Toutes les EFA du bâtiment, triées par id. */
+  /** EFA du bâtiment VISIBLES par l'utilisateur (un locataire ne voit que la sienne), triées par id. */
   efas: SiteEfa[];
 };
 
@@ -46,7 +49,8 @@ export type UserSite = {
 export async function loadUserSite(efaId?: string): Promise<UserSite> {
   const user = await getCurrentUser();
   if (!user) throw new BatimentError(401, "Aucun utilisateur connecté (lancez `npm run demo` pour créer le compte de démonstration).");
-  const selectedEfaId = await resolveUserEfaId(user.id, efaId);
+  const visible = await userEfaIds(user.id); // cloisonnement 9.3 (D22)
+  const selectedEfaId = pickEfaId(visible, efaId, efaId ? undefined : await rememberedEfaId());
   if (!selectedEfaId) {
     throw new BatimentError(404, efaId ? "EFA introuvable." : "Aucun bâtiment rattaché à cet utilisateur (lancez `npm run db:seed`).");
   }
@@ -58,11 +62,12 @@ export async function loadUserSite(efaId?: string): Promise<UserSite> {
   const categories = await db.referenceData.findMany({ where: { type: "CATEGORY" }, select: { code: true, label: true } });
   const categoryLabels = Object.fromEntries(categories.map((c) => [c.code, c.label]));
   return {
+    user: { email: user.email, role: user.role, roleLabel: isUserRole(user.role) ? USER_ROLE_LABELS[user.role] : user.role, canEditBuilding: canEditBuilding(user) },
     selectedEfaId,
     buildingId: building.id,
     postcode: building.postcode,
     city: building.city,
-    efas: building.efAs.map((e) => {
+    efas: building.efAs.filter((e) => visible.includes(e.id)).map((e) => {
       const surfaceTotal = e.surfaceTotal ?? building.surfaceTotal;
       const lines = e.surfaces.map((s) => ({ categoryCode: s.categoryCode, subCategoryCode: s.subCategoryCode, surfaceM2: s.surfaceM2 }));
       return { id: e.id, entityType: e.entityType, role: e.role, label: efaLabel({ role: e.role, surfaceTotal, lines }, categoryLabels), surfaceTotal, lines };

@@ -27,6 +27,9 @@ export type BuildingSheet = {
   /** Table département → zone, pour recalculer la zone dans le formulaire ; null si illisible. */
   departmentZones: DepartmentZone[] | null;
   zoneTableProblem: string | null;
+  /** Cloisonnement (9.3, D22) : seuls le propriétaire et l'administrateur modifient la fiche. */
+  canEdit: boolean;
+  userRoleLabel: string;
 };
 
 export class BuildingSaveError extends BatimentError {
@@ -68,6 +71,8 @@ export async function loadBuildingSheet(efaId?: string): Promise<BuildingSheet> 
     efas: site.efas.map((e) => ({ id: e.id, label: e.label, role: e.role, entityType: e.entityType, ownSurface: ownSurface.get(e.id) ?? null })),
     departmentZones: table.rows,
     zoneTableProblem: table.problem,
+    canEdit: site.user.canEditBuilding,
+    userRoleLabel: site.user.roleLabel,
   };
 }
 
@@ -86,6 +91,9 @@ export async function saveBuilding(body: unknown): Promise<BuildingSheet> {
   if (!parsed.success) throw new BuildingSaveError(400, "Requête invalide : adresse, code postal, ville, ID-RNB et surface attendus.");
   const { efaId, ...input } = parsed.data;
   const sheet = await loadBuildingSheet(efaId); // 401 / 404 si l'EFA n'est pas à l'utilisateur
+  if (!sheet.canEdit) {
+    throw new BuildingSaveError(403, `Modification refusée : un ${sheet.userRoleLabel} ne modifie pas la fiche bâtiment (seul le propriétaire le peut).`);
+  }
   const check = validateBuildingInput(input, { efaSurfaces: sheet.efas.map((e) => e.ownSurface), stationCode: sheet.stationCode });
   if (!check.ok) throw new BuildingSaveError(422, "Enregistrement refusé : corrigez les points signalés.", check.issues);
 

@@ -7,6 +7,8 @@ import "dotenv/config";
 import { createPrismaClient } from "../src/lib/db";
 
 const DEMO_EMAIL = process.env.DEV_USER_EMAIL ?? "demo.dupont@example.com";
+// Tâche 9.3 : locataire FICTIF des bureaux (cloisonnement, D22). Même adresse que DEMO_USERS (src/lib/session.ts).
+const TENANT_EMAIL = "locataire.demo@example.com";
 const YEAR = new Date().getFullYear() - 1;
 // Station de la correction climatique : Saint-Quentin 02320001, station OPERAT de l'Aisne (D16). Le module climat ne
 // corrige que si le bâtiment porte ce code ; un bâtiment de démo déjà présent est mis à jour (building.update ci-dessous).
@@ -71,6 +73,16 @@ async function main() {
       update: { surfaceTotal: BUREAUX.surfaceTotal },
     });
 
+    // 9.3 : les bureaux sont loués à un locataire FICTIF. Il est rattaché au bâtiment ET occupant des bureaux : la règle
+    // de cloisonnement (D22) ne lui montre que les bureaux ; M. Dupont (propriétaire) continue de voir les deux EFA.
+    const tenant = await db.user.upsert({
+      where: { email: TENANT_EMAIL },
+      create: { email: TENANT_EMAIL, password: "dev-stub-not-a-real-hash", role: "TENANT" },
+      update: { role: "TENANT" },
+    });
+    await db.building.update({ where: { id: building.id }, data: { users: { connect: { id: tenant.id } } } });
+    await db.eFA.update({ where: { id: bureauxId }, data: { role: "TENANT", occupants: { connect: { id: tenant.id } } } });
+
     // Nettoyage : ligne de zone fictive (code postal 00000) des versions précédentes.
     await db.climateZone.deleteMany({ where: { postcode: OLD_SITE.postcode } });
 
@@ -90,7 +102,7 @@ async function main() {
         });
       }
     }
-    console.log(`Seed OK : utilisateur ${user.email}, bâtiment ${building.id} (${SITE.city} ${SITE.postcode}), EFA restauration ${resto.id}, EFA bureaux ${bureauxId}`);
+    console.log(`Seed OK : utilisateur ${user.email}, bâtiment ${building.id} (${SITE.city} ${SITE.postcode}), EFA restauration ${resto.id}, EFA bureaux ${bureauxId} (locataire ${tenant.email})`);
   } finally {
     await db.$disconnect();
   }

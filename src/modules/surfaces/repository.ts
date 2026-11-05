@@ -4,7 +4,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { resolveUserEfaId } from "@/modules/batiment";
+import { resolveUserEfaId, userCanAccessEfa } from "@/modules/batiment";
 import {
   validateSurfaceLines,
   type Referential,
@@ -99,11 +99,9 @@ export async function saveSurfaceLines(rawInput: unknown): Promise<SurfaceLineIn
   const user = await getCurrentUser();
   if (!user) throw new SurfacesError(401, "Aucun utilisateur connecté.");
 
-  const efa = await db.eFA.findUnique({ where: { id: efaId }, include: { building: { include: { users: { select: { id: true } } } } } });
-  // Cloisonnement (9.3) : on ne distingue pas « inexistante » et « pas la vôtre ».
-  if (!efa || !efa.building.users.some((u) => u.id === user.id)) {
-    throw new SurfacesError(404, "EFA introuvable.");
-  }
+  // Cloisonnement (9.3, règle unique D22) : on ne distingue pas « inexistante » et « pas la vôtre ».
+  const efa = (await userCanAccessEfa(user.id, efaId)) ? await db.eFA.findUnique({ where: { id: efaId }, include: { building: true } }) : null;
+  if (!efa) throw new SurfacesError(404, "EFA introuvable.");
 
   const referential = await loadReferential();
   const result = validateSurfaceLines(lines, efa.surfaceTotal ?? efa.building.surfaceTotal, referential);

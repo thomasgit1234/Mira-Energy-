@@ -36,4 +36,4 @@ p.warn { padding-left: 12px; }
 .efas li { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--rule); padding-top: 8px; }
 .efas li:first-child { border-top: 0; padding-top: 0; }
 .efas a { color: var(--petrol); }
-.current { font-size: .78rem; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--petrol); color: var(--petrol); margin-left: 6px; }
+.current { align-self: center; white-space: nowrap; font-size: .78rem; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--petrol); color: var(--petrol); margin-left: 6px; }
