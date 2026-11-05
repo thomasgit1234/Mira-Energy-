@@ -20,11 +20,13 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  password  String // hashé, jamais en clair
-  role      String // "OWNER", "TENANT", "ADMIN"
-  buildings Building[] // [D3] relation inverse requise par Prisma (Annexe B ne la déclarait pas)
+  id           String     @id @default(uuid())
+  email        String     @unique
+  password     String // hashé, jamais en clair
+  role         String // "OWNER", "TENANT", "ADMIN"
+  buildings    Building[] // [D3] relation inverse requise par Prisma (Annexe B ne la déclarait pas)
+  // [9.3] EFA occupées par cet utilisateur (locataire) : un utilisateur TENANT ne voit QUE ces EFA (cloisonnement)
+  occupiedEfas EFA[]      @relation("EfaOccupants")
 }
 
 model Building {
@@ -53,6 +55,9 @@ model EFA {
   surfaceTotal  Float?
   surfaces      SurfaceLine[]
   consumptions  Consumption[]
+  // [9.3] utilisateurs locataires rattachés à cette EFA (table de liaison implicite _EfaOccupants) ;
+  // le propriétaire, lui, voit toutes les EFA de ses bâtiments (Building.users)
+  occupants     User[]        @relation("EfaOccupants")
 }
 
 model SurfaceLine {
