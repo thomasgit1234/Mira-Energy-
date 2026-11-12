@@ -4,6 +4,7 @@ import {
   EMPTY_PRIORITY, buildSynthesis, classifyError, sourceEmpty,
   type ClimatInput, type ConformiteInput, type DashboardInputs, type EmptyCode, type SourceError, type SurfacesInput,
 } from "./synthesis";
+import { buildKpis } from "./kpis";
 
 // Jeu de Laon (valeurs de contrôle de CLAUDE.md) construit avec les VRAIES fonctions de la conformité.
 const REFERENTIAL = {
@@ -86,6 +87,11 @@ describe("7.1 — cas nominal (site de Laon, référence 2013)", () => {
     expect(s.sections.verdict).toEqual({ ok: true, data: {
       status: "CONFORME", statusLabel: "CONFORME", icon: "✓", message: "Conforme par l'objectif en valeur absolue (Cabs).",
       retained: "CABS", retainedLabel: "objectif en valeur absolue (Cabs)", favorableLabel: "objectif en valeur absolue (Cabs)",
+      // Crelat dépassé de 8 820 kWh, Cabs respecté avec 237 900 kWh de marge : conforme car au moins une méthode est satisfaite.
+      methods: {
+        crelat: { objectiveKwh: 31680, met: false, gapKwh: 8820 },
+        cabs: { objectiveKwh: 278400, met: true, gapKwh: -237900 },
+      },
     } });
   });
 
@@ -359,5 +365,30 @@ describe("7.2 / 7.3 — frise et comparatif dans la synthèse", () => {
     const s = buildSynthesis(inputs({ climat: DB }), NOW);
     expect(s.sections.timeline).toMatchObject({ ok: false, empty: { code: "BASE_INJOIGNABLE" } });
     expect(s.sections.comparison).toMatchObject({ ok: false, empty: { code: "BASE_INJOIGNABLE" } });
+  });
+});
+
+describe("indicateurs clés du haut de page", () => {
+  const NOW = new Date("2026-11-12T12:00:00Z");
+
+  it("cas nominal : 2025 = 40 500 kWh, −23,3 % depuis 2013, objectif 2030 retenu 278 400 (Cabs), marge 237 900", () => {
+    expect(buildKpis(buildSynthesis(inputs(), NOW))).toEqual({
+      current: { year: 2025, rawKwh: 40500 },
+      correctedKwhPerM2: 34.75,
+      vsReference: { pct: -23.3, referenceYear: 2013 },
+      target2030: { kwh: 278400, way: "CABS", marginKwh: 237900 },
+    });
+  });
+
+  it("Cabs non calculable : objectif retenu = Crelat 31 680, marge négative (dépassement de 8 820 kWh)", () => {
+    const cabs: CabsResult = { ok: false, code: "VALEUR_ABSENTE", message: "valeur absente" };
+    const k = buildKpis(buildSynthesis(inputs({ conformite: { ok: true, data: conformite({ cabs }) } }), NOW));
+    expect(k.target2030).toEqual({ kwh: 31680, way: "CRELAT", marginKwh: -8820 });
+  });
+
+  it("sans consommation ni conformité : tous les indicateurs vides, jamais de valeur inventée", () => {
+    const rows = CLIMAT.rows.map((r) => row(r.year, null, null, "PAS_DE_CONSOMMATION"));
+    const k = buildKpis(buildSynthesis(inputs({ climat: { ok: true, data: { ...CLIMAT, rows } }, conformite: { ok: false, kind: "DB", message: "base" } }), NOW));
+    expect(k).toEqual({ current: null, correctedKwhPerM2: null, vsReference: null, target2030: null });
   });
 });

@@ -6,7 +6,7 @@ export {
 } from "./synthesis";
 export type {
   Synthesis, DashboardInputs, Source, SourceError, SourceErrorKind, EmptyCode, EmptyState, Action, Section,
-  SiteSection, VerdictSection, ObjectivesSection, FollowUpSection, RetainedMethod, Step, StepId, StepState,
+  SiteSection, VerdictSection, MethodResult, ObjectivesSection, FollowUpSection, RetainedMethod, Step, StepId, StepState,
 } from "./synthesis";
 export { fmtKwh, fmtKwhYear, fmtM2, fmtKwhPerM2, fmtPct, fmtGapKwh } from "./format";
 export { buildTimeline, buildComparison, changePct, COMPARISON_STATE_LABELS } from "./trajectory";
@@ -14,3 +14,5 @@ export type {
   Timeline, TimelineYear, TimelineMilestone, YearRole, Comparison, ComparisonYear, ComparisonState, TrajectoryRow, TrajectoryObjectives,
 } from "./trajectory";
 export { loadDashboard } from "./repository";
+export { buildKpis } from "./kpis";
+export type { Kpis } from "./kpis";

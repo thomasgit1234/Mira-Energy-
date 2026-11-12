@@ -127,6 +127,8 @@ export type SiteSection = {
 };
 
 export type RetainedMethod = "CRELAT" | "CABS" | "LES_DEUX" | null;
+/** Résultat d'une méthode pour le jalon 2030, repris tel quel du verdict (module conformité) ; null = non calculable. */
+export type MethodResult = { objectiveKwh: number; met: boolean | null; gapKwh: number | null } | null;
 export type VerdictSection = {
   status: VerdictStatus;
   statusLabel: string;
@@ -135,6 +137,8 @@ export type VerdictSection = {
   retained: RetainedMethod;
   retainedLabel: string;
   favorableLabel: string;
+  /** Détail des deux méthodes (affichage « conforme si au moins une est satisfaite »). */
+  methods: { crelat: MethodResult; cabs: MethodResult };
 };
 
 export type ObjectivesSection = {
@@ -288,6 +292,10 @@ function retainedOf(main: ConformiteInput["verdict"]["main"]): RetainedMethod {
   return crelat && cabs ? "LES_DEUX" : crelat ? "CRELAT" : cabs ? "CABS" : null;
 }
 
+function methodResult(o: ConformiteInput["verdict"]["main"]["crelat"]): MethodResult {
+  return o.calculable ? { objectiveKwh: o.objectiveKwh, met: o.met, gapKwh: o.gapKwh } : null;
+}
+
 function favorableLabel(f: ConformiteInput["verdict"]["main"]["favorable"]): string {
   if (f === null) return "aucune (aucune méthode calculable)";
   if (f === "EGALITE") return "les deux objectifs sont égaux";
@@ -373,6 +381,7 @@ export function buildSynthesis(inputs: DashboardInputs, now = new Date()): Synth
         retained,
         retainedLabel: retained ? RETAINED_LABELS[retained] : "aucune (verdict non conforme ou indéterminé)",
         favorableLabel: favorableLabel(main.favorable),
+        methods: { crelat: methodResult(main.crelat), cabs: methodResult(main.cabs) },
       },
     };
     objectives = {

@@ -21,7 +21,7 @@ retenir 2013 dans /comparateur (voir RECETTE-6).
 ## Automatique
 | Vérification | Commande | Attendu |
 |---|---|---|
-| Synthèse, frise, comparatif, états vides, priorité, erreurs, formats | `npx vitest run src/modules/dashboard` | 54 passés |
+| Synthèse, frise, comparatif, états vides, priorité, erreurs, formats | `npx vitest run src/modules/dashboard` | 57 passés |
 | Projet complet | `npm run check` | tout vert |
 
 ## Nominal — http://localhost:3000/dashboard
@@ -35,7 +35,7 @@ retenir 2013 dans /comparateur (voir RECETTE-6).
 | 6 | Consommation suivie | **2025** · Consommation brute **40 500 kWh** · Consommation corrigée **41 651 kWh** · **34,71 kWh/m²** corrigés ; « Correction climatique automatique (station Saint-Quentin) » ; aucun « DJU » | ☐ |
 | 7 | Chaîne | 6 étapes « ✓ Fait » (dont « Correction climatique ») ; « Bâtiment et EFA » sans lien, les 5 autres avec « Ouvrir » | ☐ |
 | 8 | Encadrés | « Données réelles et sourcées » (station Saint-Quentin, Cabs, OPERAT) et « Données fictives » (dont les parts chauffage, hypothèses) | ☐ |
-| 9 | Largeur | 1 280 px : deux colonnes ; mobile (outils de développement, 375 px) : une colonne, pas de défilement horizontal | ☐ |
+| 9 | Mise en page | En haut : verdict 2030 (✓ CONFORME, barres « Crelat 2030 » : ✗ dépassé de 8 820 kWh et « Cabs » : ✓ marge 237 900 kWh) à côté de 4 indicateurs (Consommation 2025 **40 500 kWh**, Depuis 2013 **−23,3 %**, Objectif 2030 retenu **278 400 kWh** · Cabs · marge 237 900 kWh, Intensité corrigée **34,71 kWh/m²**). Parcours sur une ligne, frise, détails sur 3 colonnes, comparatif, origine des données. 1 280 px : sans défilement horizontal ; mobile (375 px) : une colonne | ☐ |
 
 Contrôle côté serveur : `curl http://localhost:3000/api/dashboard` → `sections.verdict.data.status = "CONFORME"`,
 `sections.objectives.data = { referenceYear: 2013, crefKwh: 52800, crelat: { 2030: 31680, 2040: 26400, 2050: 21120 }, cabsKwh: 278400 }`,
@@ -52,6 +52,8 @@ Pré-requis : site de démo avec le CSV d'exemple importé (2010-2018) et la ré
 | 13 | Comparatif | colonnes N-2 2023, N-1 2024, N 2025 ; 2023 et 2024 « Aucune consommation » (seed) ; N : brute 40 500 kWh, écart à la référence −23,3 %, écart à l'objectif 2030 « ✓ −237 900 kWh » | ☐ |
 | 14 | Évolutions | saisir 2024 complète (/collecte/saisie) : la colonne N affiche l'évolution brute et corrigée ; avec 2024 incomplète : « — » | ☐ |
 | 15 | Sans référence | vider `referenceYear` : pas de losange Crelat, objectif retenu = Cabs, écart à la référence « — » | ☐ |
+| 16 | En-tête | Barre « Mira Énergie » en haut de chaque page ; la page ouverte est surlignée dans la navigation | ☐ |
+| 17 | EFA sans consommation (bureaux) | Verdict « ? INDÉTERMINÉ », barres « non calculable », indicateurs « — », prochaine étape → /collecte | ☐ |
 
 ## États vides — une ligne par cas
 Tous les cas sont prouvés par `src/modules/dashboard/synthesis.test.ts` (aucune modification de base nécessaire). Pour les

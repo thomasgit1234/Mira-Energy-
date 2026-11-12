@@ -14,6 +14,8 @@ manquante donne un message clair et **une** action, au lieu d'une page cassée o
 | Fichier | Rôle |
 |---|---|
 | `synthesis.ts` | **Pur.** `buildSynthesis(inputs)` → `{ sections, steps, empties, nextAction }` ; `classifyError` (erreur d'un chargeur → `AUTH` / `NOT_FOUND` / `DB` / `ERROR`) ; constantes du bandeau et de l'encadré réel / fictif. |
+| `kpis.ts` | **Pur.** `buildKpis(synthèse)` : les 4 indicateurs du haut de page (consommation suivie, évolution depuis la référence, objectif 2030 retenu et marge, intensité corrigée), repris de la synthèse. |
+| `DashboardParts.tsx` | Morceaux d'affichage (composants serveur) : `VerdictHero` (statut + une barre par méthode, objectif = repère vertical), `KpiTiles`, `TimelineView`, `ComparisonView`, `Card`, `Empty`. |
 | `trajectory.ts` | **Pur.** `buildTimeline` (frise 7.2 : années avec leur rôle, jalons 2030 / 2040 / 2050) et `buildComparison` (tableau N-2 / N-1 / N, 7.3), `changePct`. Objectifs et statuts repris du verdict de la conformité, jamais recalculés. |
 | `TrajectoryChart.tsx` | Graphique SVG de la frise (rendu serveur, aucune dépendance) : barres brutes, trajectoire Crelat, seuil Cabs (ou « hors échelle »), info-bulle par barre. |
 | `format.ts` | **Pur.** Formats français (`fmtKwh`, `fmtKwhYear`, `fmtM2`, `fmtKwhPerM2`) : espace fine insécable pour les milliers, virgule décimale. |
